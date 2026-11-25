@@ -54,7 +54,7 @@ object IntentsController {
     const val PLUGIN_REPOSITORY_LINK: String = "exteraPluginRepo"
     const val PLUGIN_REPOSITORY_QUERY_KEY: String = "c"
     const val PLUGIN_REPOSITORY_GIT_QUERY_KEY: String = "git"
-    private val VIEW_FILE_EXTENSIONS = setOf("plugin", "extera", "icons", "pill")
+    private val VIEW_FILE_EXTENSIONS = setOf("plugin", "splug", "extera", "icons", "pill")
 
     private val deeplinkCallbacks: Map<String, (Uri) -> Unit> = mapOf(
         "extera" to {

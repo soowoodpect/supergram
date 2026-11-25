@@ -12,8 +12,8 @@
 -->
 
 <resources>
-    <string name="exteraAppName" translatable="false">exteraGram</string>
-    <string name="Preferences">Настройки exteraGram</string>
+    <string name="exteraAppName" translatable="false">SuperGram</string>
+    <string name="Preferences">Настройки SuperGram</string>
 
     <!-- Главное меню -->
     <string name="Links">Ссылки</string>
@@ -1414,4 +1414,33 @@
     <string name="MaximumReactionsGroupValue_many">%d реакций на сообщение</string>
     <string name="MaximumReactionsGroupValue_other">%d реакций на сообщение</string>
     <string name="MaximumReactionsGroupInfo">Ограничьте количество разных реакций, которые можно поставить на сообщение, включая уже отправленные.</string>
+
+    <!-- SuperGram -->
+    <string name="SuperGramAttribution">Основан на exteraGram</string>
+    <string name="SuperGramAttributionSubtext">Открытый исходный код · GitHub</string>
+    <string name="PluginsTabExtera">Плагины exteraGram</string>
+    <string name="PluginsTabSuperGram">Плагины SuperGram</string>
+    <string name="ImportPluginFile">Импорт .splug / .plugin</string>
+    <string name="SuperGramPluginBadge">SuperGram (.splug)</string>
+    <string name="SuperGramPluginsEmptyTitle">Нет плагинов SuperGram</string>
+    <string name="SuperGramPluginsEmptyInfo">Откройте файл .splug в любом чате или импортируйте плагин с устройства.</string>
+    <string name="DesignStyle">Стиль дизайна</string>
+    <string name="DesignStyleMaterialYou">Material You</string>
+    <string name="DesignStyleMiuiX">MIUIX (HyperOS)</string>
+    <string name="DesignStyleWindows11">Windows 11 (Fluent)</string>
+    <string name="DesignStyleIos">iOS (Cupertino)</string>
+    <string name="DesignStyleInfo">Меняет стиль оформления карточек, переключателей, заголовков, границ и списков.</string>
+    <string name="UiCustomization">Гибкая настройка интерфейса</string>
+    <string name="UiCustomizationInfo">Перестановка, скрытие и разделение любых плашек и настроек</string>
+    <string name="UiLayoutSuperGramPrefs">Плашки настроек SuperGram</string>
+    <string name="UiLayoutMainSettings">Плашки главных настроек</string>
+    <string name="UiLayoutDrawerNav">Боковое меню и навигация</string>
+    <string name="UiLayoutPillStack">Плашки в поиске</string>
+    <string name="UiLayoutAddDivider">Добавить разделитель</string>
+    <string name="UiLayoutReset">Сбросить расположение</string>
+    <string name="UiLayoutHelp">Перетаскивайте плашки за маркер справа, чтобы поставить их куда угодно. Нажмите на плашку, чтобы скрыть или показать, либо добавьте разделитель.</string>
+    <string name="UiCardPadding">Боковой отступ плашек</string>
+    <string name="UiCardPaddingAuto">Авто</string>
+    <string name="UiCardBorder">Обводка плашек</string>
+    <string name="UiCardBorderInfo">Тонкая рамка вокруг карточек в стиле Fluent / Glass.</string>
 </resources>

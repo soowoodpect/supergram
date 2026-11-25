@@ -68,6 +68,7 @@ import com.exteragram.messenger.GlassOutlineStyle;
 import com.exteragram.messenger.config.BottomNavigationBar;
 import com.exteragram.messenger.debug.DebugActivity;
 import com.exteragram.messenger.preferences.MainPreferencesActivity;
+import com.exteragram.messenger.preferences.utils.SuperGramUiConfig;
 import com.exteragram.messenger.utils.AppUtils;
 import com.exteragram.messenger.utils.ui.tabs.HideOnScrollTracker;
 import com.exteragram.messenger.utils.ui.tabs.MainTabsUiHelper;
@@ -277,8 +278,16 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         mainTabsHiddenByScroll = false;
         hideOnScrollTracker.reset();
         updateMainTabsVisibility();
-        if (listView != null && listView.adapter != null) {
-            listView.adapter.update(false);
+        if (fragmentView != null) {
+            fragmentView.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundGray));
+        }
+        if (listView != null) {
+            listView.setSections();
+            listView.setSectionsDrawBackground(true);
+            listView.invalidateItemDecorations();
+            if (listView.adapter != null) {
+                listView.adapter.update(false);
+            }
         }
     }
 
@@ -852,27 +861,62 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             items.add(UItem.asShadow(null));
         }
 
-        items.add(SettingCell.Factory.of(-1, 0xFFE83030, 0xFFE83030, Theme.isCurrentThemeMonet() ? R.drawable.ic_foreground_solid : R.drawable.ic_foreground, getString(R.string.Preferences)));
-
-        items.add(UItem.asShadow(null));
-
         final boolean walletAbove = getConnectionsManager().getCurrentTime() - 1791538462 < 4 * 7 * 24 * 60 * 60;
         if (walletAbove && getMessagesController().config.walletAvailable.get()) {
             addWalletItem(items);
             items.add(UItem.asShadow(null));
         }
 
-        items.add(SettingCell.Factory.of(1, IconBackgroundColors.BLUE.top, IconBackgroundColors.BLUE.bottom, R.drawable.settings_account, getString(R.string.SettingsAccount), getString(R.string.SettingsAccountInfo)));
-        items.add(SettingCell.Factory.of(2, IconBackgroundColors.ORANGE.top, IconBackgroundColors.ORANGE.bottom, R.drawable.settings_chat, getString(R.string.SettingsChat), getString(R.string.SettingsChatInfo)));
-        items.add(SettingCell.Factory.of(3, IconBackgroundColors.GREEN.top, IconBackgroundColors.GREEN.bottom, R.drawable.settings_privacy, getString(R.string.SettingsPrivacySecurity), getString(R.string.SettingsPrivacySecurityInfo)));
-        items.add(SettingCell.Factory.of(5, IconBackgroundColors.RED.top, IconBackgroundColors.RED.bottom, R.drawable.settings_sounds, getString(R.string.SettingsNotifications), getString(R.string.SettingsNotificationsInfo)));
-        items.add(SettingCell.Factory.of(6, IconBackgroundColors.BLUE_DEEP.top, IconBackgroundColors.BLUE_DEEP.bottom, R.drawable.settings_data, getString(R.string.SettingsData), getString(R.string.SettingsDataInfo)));
-        items.add(SettingCell.Factory.of(7, IconBackgroundColors.BLUE_ALT.top, IconBackgroundColors.BLUE_ALT.bottom, R.drawable.settings_folders, getString(R.string.SettingsFolders), getString(R.string.SettingsFoldersInfo)));
-        items.add(SettingCell.Factory.of(8, IconBackgroundColors.CYAN.top, IconBackgroundColors.CYAN.bottom, R.drawable.settings_devices, getString(R.string.SettingsDevices), getString(R.string.SettingsDevicesInfo), getDevicesCount()));
-        items.add(SettingCell.Factory.of(9, IconBackgroundColors.ORANGE_DEEP.top, IconBackgroundColors.ORANGE_DEEP.bottom, R.drawable.settings_power, getString(R.string.SettingsPowerSaving), getString(R.string.SettingsPowerSavingInfo)));
-        items.add(SettingCell.Factory.of(10, IconBackgroundColors.PURPLE.top, IconBackgroundColors.PURPLE.bottom, R.drawable.settings_language, getString(R.string.SettingsLanguage), null, LocaleController.getCurrentLanguageName()));
+        final ArrayList<String> mainLayout = SuperGramUiConfig.getMainSettingsLayout();
+        final java.util.HashSet<String> mainHidden = SuperGramUiConfig.getMainSettingsHidden();
+        for (int i = 0; i < mainLayout.size(); i++) {
+            final String key = mainLayout.get(i);
+            if (SuperGramUiConfig.isDivider(key)) {
+                if (!items.isEmpty() && items.get(items.size() - 1).viewType != UniversalAdapter.VIEW_TYPE_SHADOW) {
+                    items.add(UItem.asShadow(null));
+                }
+                continue;
+            }
+            if (mainHidden.contains(key)) {
+                continue;
+            }
+            switch (key) {
+                case SuperGramUiConfig.MAIN_SUPERGRAM:
+                    items.add(SettingCell.Factory.of(-1, 0xFF7CC2EC, 0xFF4CA3DD, Theme.isCurrentThemeMonet() ? R.drawable.ic_foreground_solid : R.drawable.ic_foreground, getString(R.string.Preferences)));
+                    break;
+                case SuperGramUiConfig.MAIN_ACCOUNT:
+                    items.add(SettingCell.Factory.of(1, IconBackgroundColors.BLUE.top, IconBackgroundColors.BLUE.bottom, R.drawable.settings_account, getString(R.string.SettingsAccount), getString(R.string.SettingsAccountInfo)));
+                    break;
+                case SuperGramUiConfig.MAIN_CHATS:
+                    items.add(SettingCell.Factory.of(2, IconBackgroundColors.ORANGE.top, IconBackgroundColors.ORANGE.bottom, R.drawable.settings_chat, getString(R.string.SettingsChat), getString(R.string.SettingsChatInfo)));
+                    break;
+                case SuperGramUiConfig.MAIN_PRIVACY:
+                    items.add(SettingCell.Factory.of(3, IconBackgroundColors.GREEN.top, IconBackgroundColors.GREEN.bottom, R.drawable.settings_privacy, getString(R.string.SettingsPrivacySecurity), getString(R.string.SettingsPrivacySecurityInfo)));
+                    break;
+                case SuperGramUiConfig.MAIN_NOTIFICATIONS:
+                    items.add(SettingCell.Factory.of(5, IconBackgroundColors.RED.top, IconBackgroundColors.RED.bottom, R.drawable.settings_sounds, getString(R.string.SettingsNotifications), getString(R.string.SettingsNotificationsInfo)));
+                    break;
+                case SuperGramUiConfig.MAIN_DATA:
+                    items.add(SettingCell.Factory.of(6, IconBackgroundColors.BLUE_DEEP.top, IconBackgroundColors.BLUE_DEEP.bottom, R.drawable.settings_data, getString(R.string.SettingsData), getString(R.string.SettingsDataInfo)));
+                    break;
+                case SuperGramUiConfig.MAIN_FOLDERS:
+                    items.add(SettingCell.Factory.of(7, IconBackgroundColors.BLUE_ALT.top, IconBackgroundColors.BLUE_ALT.bottom, R.drawable.settings_folders, getString(R.string.SettingsFolders), getString(R.string.SettingsFoldersInfo)));
+                    break;
+                case SuperGramUiConfig.MAIN_DEVICES:
+                    items.add(SettingCell.Factory.of(8, IconBackgroundColors.CYAN.top, IconBackgroundColors.CYAN.bottom, R.drawable.settings_devices, getString(R.string.SettingsDevices), getString(R.string.SettingsDevicesInfo), getDevicesCount()));
+                    break;
+                case SuperGramUiConfig.MAIN_POWER:
+                    items.add(SettingCell.Factory.of(9, IconBackgroundColors.ORANGE_DEEP.top, IconBackgroundColors.ORANGE_DEEP.bottom, R.drawable.settings_power, getString(R.string.SettingsPowerSaving), getString(R.string.SettingsPowerSavingInfo)));
+                    break;
+                case SuperGramUiConfig.MAIN_LANGUAGE:
+                    items.add(SettingCell.Factory.of(10, IconBackgroundColors.PURPLE.top, IconBackgroundColors.PURPLE.bottom, R.drawable.settings_language, getString(R.string.SettingsLanguage), null, LocaleController.getCurrentLanguageName()));
+                    break;
+            }
+        }
 
-        items.add(UItem.asShadow(null));
+        if (items.isEmpty() || items.get(items.size() - 1).viewType != UniversalAdapter.VIEW_TYPE_SHADOW) {
+            items.add(UItem.asShadow(null));
+        }
         if (!walletAbove && getMessagesController().config.walletAvailable.get()) {
             addWalletItem(items);
             items.add(UItem.asShadow(null));

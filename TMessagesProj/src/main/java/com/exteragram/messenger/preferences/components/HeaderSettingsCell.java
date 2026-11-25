@@ -111,6 +111,7 @@ public class HeaderSettingsCell extends LinearLayout implements CustomPreference
         if (info != null) {
             sb.append(" (").append(PackageInfoCompat.getLongVersionCode(info)).append(")");
         }
+        sb.append("\n").append(LocaleController.getString(R.string.SuperGramAttribution));
         subtitleTextView.setText(sb);
         subtitleTextView.setGravity(Gravity.CENTER);
         subtitleTextView.setLines(0);

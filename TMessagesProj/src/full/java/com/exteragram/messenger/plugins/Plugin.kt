@@ -37,6 +37,8 @@ class Plugin(
     @Volatile
     private var isNotResponding = false
     private var requirements: List<String>? = arrayListOf()
+    @Volatile
+    private var superGramPlugin = false
 
     @Transient
     var cachedEngine: PluginsController.PluginsEngine? = null
@@ -112,6 +114,12 @@ class Plugin(
 
     fun setNotResponding(notResponding: Boolean) {
         isNotResponding = notResponding
+    }
+
+    fun isSuperGramPlugin(): Boolean = superGramPlugin
+
+    fun setSuperGramPlugin(superGramPlugin: Boolean) {
+        this.superGramPlugin = superGramPlugin
     }
 
     fun getIcon(): String? {

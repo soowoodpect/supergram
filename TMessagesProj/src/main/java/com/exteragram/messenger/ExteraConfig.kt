@@ -119,6 +119,13 @@ enum class TransitionAnimation(override val prefId: Int) : PrefEnum {
     SPRING(2)
 }
 
+enum class DesignStyle(override val prefId: Int) : PrefEnum {
+    MATERIAL_YOU(0),
+    MIUIX(1),
+    WINDOWS_11(2),
+    IOS(3)
+}
+
 enum class StickerTimeMode(override val prefId: Int) : PrefEnum {
     DEFAULT(0),
     SIDE(1),
@@ -440,6 +447,55 @@ var pluginsUnknownSources by BooleanPref(false)
 var pluginsStaticAnalysis by BooleanPref(true)
 var pinnedPlugins by StringSetPref(emptySet())
 var useSystemIconShape by BooleanPref(true)
+
+// SuperGram Design & Flexible UI Layout
+var designStyle by EnumPref(DesignStyle.MATERIAL_YOU)
+var uiCardPaddingDp by IntegerPref(-1)
+var uiCardBorder by BooleanPref(false)
+var superGramPrefsLayoutJson by StringPref("")
+var superGramPrefsHiddenJson by StringPref("")
+var mainSettingsLayoutJson by StringPref("")
+var mainSettingsHiddenJson by StringPref("")
+
+fun applyDesignStyle(style: DesignStyle) {
+    designStyle = style
+    when (style) {
+        DesignStyle.MATERIAL_YOU -> {
+            sectionRadius = DEFAULT_SECTION_RADIUS_DP.toFloat()
+            dividerStyle = DividerStyle.LINE
+            newSwitchStyle = true
+            newLoadingStyle = true
+            newSliderStyle = true
+            uiCardBorder = false
+            uiCardPaddingDp = -1
+        }
+        DesignStyle.MIUIX -> {
+            sectionRadius = 16f
+            dividerStyle = DividerStyle.HIDDEN
+            sectionsSeparatedHeaders = true
+            newSwitchStyle = true
+            uiCardBorder = false
+            uiCardPaddingDp = 14
+        }
+        DesignStyle.WINDOWS_11 -> {
+            sectionRadius = 6f
+            dividerStyle = DividerStyle.LINE
+            sectionsSeparatedHeaders = true
+            newSwitchStyle = true
+            uiCardBorder = true
+            uiCardPaddingDp = 12
+        }
+        DesignStyle.IOS -> {
+            sectionRadius = 12f
+            dividerStyle = DividerStyle.LINE
+            sectionsSeparatedHeaders = true
+            centerTitle = true
+            newSwitchStyle = true
+            uiCardBorder = false
+            uiCardPaddingDp = 16
+        }
+    }
+}
 
 fun init() {
     loadConfig()

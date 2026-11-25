@@ -45,6 +45,7 @@ import com.exteragram.messenger.pluginsSafeMode
 import com.exteragram.messenger.preferences as exteraPreferences
 import com.exteragram.messenger.preferences.utils.SettingsRegistry
 import com.exteragram.messenger.utils.chats.ChatUtils
+import com.exteragram.messenger.utils.ui.DesignStyleHelper
 import de.robv.android.xposed.XC_MethodHook
 import de.robv.android.xposed.XposedBridge
 import org.simplifiles.SimpliFiles
@@ -443,7 +444,13 @@ class PluginsController private constructor() : PluginsHooks {
             try {
                 invalidatePluginSettings(pluginId)
             } finally {
-                removeMenuItemsByPluginId(pluginId)
+                try {
+                    removeMenuItemsByPluginId(pluginId)
+                } finally {
+                    if (DesignStyleHelper.clearPluginOverrides(pluginId)) {
+                        DesignStyleHelper.triggerLiveUiRefresh()
+                    }
+                }
             }
         }
     }
@@ -590,6 +597,7 @@ class PluginsController private constructor() : PluginsHooks {
             if (preferences.contains(enabledKey)) {
                 preferences.edit { remove(enabledKey) }
             }
+            setSuperGramPlugin(pluginId, false)
         }
     }
 
@@ -1262,6 +1270,7 @@ class PluginsController private constructor() : PluginsHooks {
 
     companion object {
         const val PREF_PLUGIN_ENABLED_KEY_PREFIX = "plugin_enabled_"
+        const val PREF_SUPERGRAM_PLUGINS_KEY = "supergram_plugins"
         const val PLUGIN_FILE_ICON_NONE = -1
         const val PLUGIN_FILE_ICON_ID_START = 101
 
@@ -1466,6 +1475,37 @@ class PluginsController private constructor() : PluginsHooks {
             pinnedPlugins = pinned
             editor.putStringSet("pinnedPlugins", pinned).apply()
             getInstance().notifyPluginsChanged()
+        }
+
+        @JvmStatic
+        fun isSuperGramPlugin(pluginId: String?): Boolean {
+            if (pluginId.isNullOrEmpty()) {
+                return false
+            }
+            val plugin = getInstance().plugins[pluginId]
+            if (plugin != null && plugin.isSuperGramPlugin()) {
+                return true
+            }
+            val set = getInstance().preferences.getStringSet(PREF_SUPERGRAM_PLUGINS_KEY, null)
+            return set != null && set.contains(pluginId)
+        }
+
+        @JvmStatic
+        fun setSuperGramPlugin(pluginId: String?, isSuperGram: Boolean) {
+            if (pluginId.isNullOrEmpty()) {
+                return
+            }
+            val current = getInstance().preferences.getStringSet(PREF_SUPERGRAM_PLUGINS_KEY, null)
+            val updated = if (current != null) HashSet(current) else HashSet()
+            if (isSuperGram) {
+                updated.add(pluginId)
+            } else {
+                updated.remove(pluginId)
+            }
+            getInstance().preferences.edit {
+                putStringSet(PREF_SUPERGRAM_PLUGINS_KEY, updated)
+            }
+            getInstance().plugins[pluginId]?.setSuperGramPlugin(isSuperGram)
         }
 
         @JvmStatic

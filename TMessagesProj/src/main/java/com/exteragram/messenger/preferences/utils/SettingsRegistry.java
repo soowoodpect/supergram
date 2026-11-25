@@ -28,6 +28,8 @@ import com.exteragram.messenger.preferences.MainPreferencesActivity;
 import com.exteragram.messenger.preferences.OtherPreferencesActivity;
 import com.exteragram.messenger.preferences.appearance.AppearancePreferencesActivity;
 import com.exteragram.messenger.preferences.appearance.AppNavigationPreferencesActivity;
+import com.exteragram.messenger.preferences.appearance.LayoutOrderEditorActivity;
+import com.exteragram.messenger.preferences.appearance.UiLayoutPreferencesActivity;
 import com.exteragram.messenger.preferences.chats.ChatsPreferencesActivity;
 import com.exteragram.messenger.preferences.chats.InlineResultsPreferencesActivity;
 import com.exteragram.messenger.preferences.chats.SwipeActionsPreferencesActivity;
@@ -68,6 +70,8 @@ public class SettingsRegistry {
             Map.entry(OtherPreferencesActivity.class, R.drawable.msg_fave),
             Map.entry(AiPreferencesActivity.class, R.drawable.msg_bot),
             Map.entry(AppNavigationPreferencesActivity.class, R.drawable.msg_list),
+            Map.entry(UiLayoutPreferencesActivity.class, R.drawable.msg_list),
+            Map.entry(LayoutOrderEditorActivity.class, R.drawable.msg_list),
             Map.entry(PillStackPreferencesActivity.class, R.drawable.outline_header_search),
             Map.entry(FeedChannelsActivity.class, R.drawable.ic_feed),
             Map.entry(SwipeActionsPreferencesActivity.class, R.drawable.menu_reply),

@@ -41,6 +41,7 @@ import com.exteragram.messenger.drawer.MainMenuItem;
 import com.exteragram.messenger.utils.chats.ChatUtils;
 import com.exteragram.messenger.drawer.MainMenuHelper;
 import com.exteragram.messenger.utils.ui.AccountsUiHelper;
+import com.exteragram.messenger.utils.ui.DesignStyleHelper;
 import com.exteragram.messenger.utils.ui.tabs.MainTabsUiHelper;
 import com.exteragram.messenger.utils.ui.tabs.TabsVisibilityAnimator;
 
@@ -502,17 +503,30 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
             });
         }
 
-        int[] tabOrder = {
-                INDEX_CHATS,
-                INDEX_FEED,
-                INDEX_CONTACTS,
-                INDEX_SETTINGS,
-                INDEX_CALLS,
-                INDEX_PROFILE
-        };
+        int[] tabOrder = DesignStyleHelper.getMainTabsOrderOverride();
+        if (tabOrder == null || tabOrder.length == 0) {
+            tabOrder = new int[]{
+                    INDEX_CHATS,
+                    INDEX_FEED,
+                    INDEX_CONTACTS,
+                    INDEX_SETTINGS,
+                    INDEX_CALLS,
+                    INDEX_PROFILE
+            };
+        }
+        boolean[] addedTabs = new boolean[tabs.length];
         for (int index : tabOrder) {
-            tabsView.addView(tabs[index]);
-            tabsView.setViewVisible(tabs[index], true, false);
+            if (index >= 0 && index < tabs.length && !addedTabs[index]) {
+                addedTabs[index] = true;
+                tabsView.addView(tabs[index]);
+                tabsView.setViewVisible(tabs[index], !DesignStyleHelper.isMainTabHidden(index), false);
+            }
+        }
+        for (int index = 0; index < tabs.length; index++) {
+            if (!addedTabs[index]) {
+                tabsView.addView(tabs[index]);
+                tabsView.setViewVisible(tabs[index], false, false);
+            }
         }
         checkUi_contactsOrFeedTabVisible(false);
         checkUi_callTabVisible(getUserConfig().showCallsTab, false);
@@ -1412,15 +1426,17 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
     private void checkUi_contactsOrFeedTabVisible(boolean animated) {
         if (tabsView != null) {
             final boolean feedTabVisible = isFeedTabEnabled();
-            tabsView.setViewVisible(tabs[INDEX_FEED], feedTabVisible, animated);
-            tabsView.setViewVisible(tabs[INDEX_CONTACTS], !feedTabVisible && getUserConfig().showContactsTab, animated);
+            tabsView.setViewVisible(tabs[INDEX_FEED], feedTabVisible && !DesignStyleHelper.isMainTabHidden(INDEX_FEED), animated);
+            tabsView.setViewVisible(tabs[INDEX_CONTACTS], !feedTabVisible && getUserConfig().showContactsTab && !DesignStyleHelper.isMainTabHidden(INDEX_CONTACTS), animated);
+            tabsView.setViewVisible(tabs[INDEX_CHATS], !DesignStyleHelper.isMainTabHidden(INDEX_CHATS), animated);
+            tabsView.setViewVisible(tabs[INDEX_PROFILE], !DesignStyleHelper.isMainTabHidden(INDEX_PROFILE), animated);
         }
     }
 
     private void checkUi_callTabVisible(boolean callTabsVisible, boolean animated) {
         if (tabsView != null) {
-            tabsView.setViewVisible(tabs[INDEX_SETTINGS], !callTabsVisible, animated);
-            tabsView.setViewVisible(tabs[INDEX_CALLS], callTabsVisible, animated);
+            tabsView.setViewVisible(tabs[INDEX_SETTINGS], !callTabsVisible && !DesignStyleHelper.isMainTabHidden(INDEX_SETTINGS), animated);
+            tabsView.setViewVisible(tabs[INDEX_CALLS], callTabsVisible && !DesignStyleHelper.isMainTabHidden(INDEX_CALLS), animated);
         }
     }
 

@@ -359,6 +359,11 @@ class PluginCell(context: Context) : FrameLayout(context),
                 .append(plugin.getVersion())
                 .append(" • ")
                 .append(LocaleUtils.formatWithUsernames(plugin.getAuthor()))
+                .apply {
+                    if (plugin.isSuperGramPlugin()) {
+                        append(" • .splug")
+                    }
+                }
 
         when {
             plugin.isNotResponding() -> bindNotRespondingState()

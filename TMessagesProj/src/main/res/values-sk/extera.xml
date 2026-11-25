@@ -10,7 +10,7 @@
 
 -->
 <resources>
-    <string name="Preferences">Nastavenia exteraGram</string>
+    <string name="Preferences">Nastavenia SuperGram</string>
     <!-- Main Menu -->
     <string name="Links">Odkazy</string>
     <string name="Crowdin">Preložiť</string>

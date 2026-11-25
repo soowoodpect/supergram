@@ -34,6 +34,8 @@ import com.exteragram.messenger.preferences.utils.SettingsRegistry
 import com.exteragram.messenger.utils.addIf
 import com.exteragram.messenger.utils.folders.FolderCounters
 import com.exteragram.messenger.utils.network.RemoteUtils
+import com.exteragram.messenger.utils.ui.DesignStyleHelper
+import com.exteragram.messenger.utils.ui.MonetUtils
 import com.exteragram.messenger.utils.text.LocaleUtils
 import org.telegram.messenger.AndroidUtilities
 import org.telegram.messenger.LocaleController
@@ -73,10 +75,14 @@ class AppearancePreferencesActivity : BasePreferencesActivity() {
         TAB_COUNTER,
         HIDE_ALL_CHATS,
         APP_NAVIGATION_SETTINGS,
+        UI_CUSTOMIZATION,
+        DESIGN_STYLE,
         APP_ICON,
         ICON_PACKS,
         FAB_SHAPE,
         SECTION_RADIUS,
+        UI_CARD_PADDING,
+        UI_CARD_BORDER,
         SEPARATED_HEADERS,
         DIVIDER_STYLE,
         MD3_STYLES,
@@ -104,6 +110,7 @@ class AppearancePreferencesActivity : BasePreferencesActivity() {
     private lateinit var tabCounterModes: Array<CharSequence>
     private lateinit var dividerStyles: Array<CharSequence>
     private lateinit var glassOutlineStyles: Array<CharSequence>
+    private lateinit var designStyleOptions: Array<CharSequence>
     private val headerBlurStyles = HeaderBlurStyle.entries.filter { it != HeaderBlurStyle.PROGRESSIVE || Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU }
 
     private var avatarCornersPreviewCell: AvatarCornersPreviewCell? = null
@@ -160,6 +167,7 @@ class AppearancePreferencesActivity : BasePreferencesActivity() {
             getString(R.string.GlassOutlineSolid),
             getString(R.string.GlassOutlineHidden)
         )
+        designStyleOptions = DesignStyle.entries.map { DesignStyleHelper.getStyleDisplayName(it) }.toTypedArray()
     }
 
     override fun createView(context: Context): View {
@@ -198,6 +206,8 @@ class AppearancePreferencesActivity : BasePreferencesActivity() {
         items.add(uCheck(AppearanceItem.HIDE_ALL_CHATS, LocaleController.formatString(R.string.HideAllChats, getString(R.string.FilterAllChats)), hideAllChats, linkAlias = "hideAllChats"))
         items.add(UItem.asShadow(getString(R.string.FoldersInfo)))
 
+        items.add(uButton(AppearanceItem.DESIGN_STYLE, getString(R.string.DesignStyle), R.drawable.msg_theme, value = DesignStyleHelper.getStyleDisplayName(), subtext = getString(R.string.DesignStyleInfo), linkAlias = "designStyle"))
+        items.add(uButton(AppearanceItem.UI_CUSTOMIZATION, getString(R.string.UiCustomization), R.drawable.msg_list, subtext = getString(R.string.UiCustomizationInfo), linkAlias = "uiCustomization"))
         items.add(uButton(AppearanceItem.APP_NAVIGATION_SETTINGS, getString(R.string.AppNavigation), R.drawable.msg_newphone, subtext = getString(R.string.AppNavigationInfo), linkAlias = "appNavigationSettings"))
         items.add(uButton(AppearanceItem.APP_ICON, getString(R.string.AppIcon), R.drawable.menu_edit_appearance, subtext = AppIconController.getSelectedIcon().getTitle(), linkAlias = "appIcon")
             .onBind { view ->
@@ -224,6 +234,8 @@ class AppearancePreferencesActivity : BasePreferencesActivity() {
 
         items.add(UItem.asHeader(if (SettingsRegistry.markAsNewFeature("Appearance-Sections")) LocaleUtils.applyNewSpan(getString(R.string.Sections)) else getString(R.string.Sections)))
         items.add(createSectionRadiusSliderItem().setSearchable(this).setLinkAlias("sectionRadius", this))
+        items.add(createCardPaddingSliderItem().setSearchable(this))
+        items.add(uCheck(AppearanceItem.UI_CARD_BORDER, getString(R.string.UiCardBorder), uiCardBorder, getString(R.string.UiCardBorderInfo), linkAlias = "uiCardBorder"))
         val segmentedDividers = dividerStyle == DividerStyle.SEGMENTS
         val separatedHeadersCheck = uCheck(AppearanceItem.SEPARATED_HEADERS, getString(R.string.SeparateHeaders), sectionsSeparatedHeaders, linkAlias = "sectionsSeparatedHeaders")
         separatedHeadersCheck.setEnabled(!segmentedDividers)
@@ -291,6 +303,23 @@ class AppearancePreferencesActivity : BasePreferencesActivity() {
                 toggleBooleanSettingAndRefresh(item) { hideAllChats = it }
                 handleHideAllChatsClick()
             }
+            AppearanceItem.DESIGN_STYLE ->
+                showListDialog(item, designStyleOptions, getString(R.string.DesignStyle), designStyle.ordinal) { i ->
+                    applyDesignStyle(DesignStyle.entries[i])
+                    Theme.applyCommonTheme()
+                    fragmentView?.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundGray))
+                    actionBar?.refreshTitlePosition(true)
+                    NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.didSetNewTheme, false, true, true)
+                    NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.reloadInterface)
+                    handleSectionRadiusChange()
+                    listView.adapter?.update(true)
+                    parentLayout.rebuildFragments(REBUILD_FLAG_REBUILD_LAST)
+                }
+            AppearanceItem.UI_CUSTOMIZATION -> presentFragment(UiLayoutPreferencesActivity())
+            AppearanceItem.UI_CARD_BORDER -> {
+                toggleBooleanSettingAndRefresh(item) { uiCardBorder = it }
+                handleSectionRadiusChange()
+            }
             AppearanceItem.APP_NAVIGATION_SETTINGS -> presentFragment(AppNavigationPreferencesActivity())
             AppearanceItem.APP_ICON -> presentFragment(AppIconsActivity())
             AppearanceItem.ICON_PACKS -> presentFragment(IconPacksActivity())
@@ -351,6 +380,22 @@ class AppearancePreferencesActivity : BasePreferencesActivity() {
         }
         item.id = AppearanceItem.SECTION_RADIUS.id
         item.text = getString(R.string.Sections)
+        return item
+    }
+
+    private fun createCardPaddingSliderItem(): UItem {
+        val item = UItem.asIntSlideView(
+            2,
+            -1,
+            uiCardPaddingDp.coerceIn(-1, 24),
+            24,
+            { value -> if (value < 0) getString(R.string.UiCardPaddingAuto) else "$value dp" }
+        ) { value ->
+            uiCardPaddingDp = value
+            handleSectionRadiusChange()
+        }
+        item.id = AppearanceItem.UI_CARD_PADDING.id
+        item.text = getString(R.string.UiCardPadding)
         return item
     }
 

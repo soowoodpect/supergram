@@ -10,7 +10,7 @@
 
 -->
 <resources>
-    <string name="Preferences">exteraGram преференцес</string>
+    <string name="Preferences">SuperGram преференцес</string>
     <!-- Main Menu -->
     <string name="Links">Линкови</string>
     <string name="Crowdin">Преведи</string>

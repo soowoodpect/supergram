@@ -23,7 +23,7 @@ ALLOWED_KEYS = {
     "__version__", "__icon__",
     "__min_version__", "__requirements__",
     "__app_version__", "__sdk_version__",
-    "__category__"
+    "__category__", "__supergram__"
 }
 
 

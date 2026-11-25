@@ -10,7 +10,7 @@
 
 -->
 <resources>
-    <string name="Preferences">Keutamaan exteraGram</string>
+    <string name="Preferences">Keutamaan SuperGram</string>
     <!-- Main Menu -->
     <string name="Links">Pautan</string>
     <string name="Crowdin">Terjemah</string>

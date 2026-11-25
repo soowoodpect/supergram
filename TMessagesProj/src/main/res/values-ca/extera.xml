@@ -10,7 +10,7 @@
 
 -->
 <resources>
-    <string name="Preferences">Preferències d\'exteraGram</string>
+    <string name="Preferences">Preferències d\'SuperGram</string>
     <!-- Main Menu -->
     <string name="Links">Enllaços</string>
     <string name="Crowdin">Traduir</string>

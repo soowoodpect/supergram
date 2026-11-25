@@ -10,7 +10,7 @@
 
 -->
 <resources>
-    <string name="Preferences">exteraGram Voorkeuren</string>
+    <string name="Preferences">SuperGram Voorkeuren</string>
     <!-- Main Menu -->
     <string name="Crowdin">Vertalen</string>
     <string name="Categories">Categorieën</string>

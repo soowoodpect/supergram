@@ -36,6 +36,7 @@ import androidx.annotation.Keep;
 import androidx.dynamicanimation.animation.FloatPropertyCompat;
 import androidx.dynamicanimation.animation.SpringAnimation;
 
+import com.exteragram.messenger.utils.ui.DesignStyleHelper;
 import com.exteragram.messenger.utils.ui.material.SwitchUiHelper;
 
 import org.telegram.messenger.AndroidUtilities;
@@ -472,6 +473,18 @@ public class Switch extends View implements Theme.Colorable {
         final boolean newStyle = SwitchUiHelper.isMaterial3SwitchStyle();
         final int overlayPadding = SwitchUiHelper.getOverlayPadding();
         final int stateLayerRadius = SwitchUiHelper.getStateLayerRadius();
+        if (overrideColorProgress == 0 && DesignStyleHelper.usesCustomStyledSwitch()) {
+            final int tColor = processColor(Theme.getColor(trackColorKey, resourcesProvider));
+            final int tcColor = processColor(Theme.getColor(trackCheckedColorKey, resourcesProvider));
+            final int thColor = processColor(Theme.getColor(thumbColorKey, resourcesProvider));
+            final int thcColor = processColor(Theme.getColor(thumbCheckedColorKey, resourcesProvider));
+            DesignStyleHelper.drawStyledSwitch(
+                canvas, getMeasuredWidth(), getMeasuredHeight(), progress,
+                tColor, tcColor, thColor, thcColor, overrideAlpha,
+                rectF, paint, outlinePaint
+            );
+            return;
+        }
         final boolean fadeOut = newStyle && overrideAlpha < 1.0f;
         if (fadeOut) {
             canvas.saveLayerAlpha(-stateLayerRadius, -stateLayerRadius, getMeasuredWidth() + stateLayerRadius, getMeasuredHeight() + stateLayerRadius, (int) (255 * overrideAlpha));

@@ -12,8 +12,8 @@
 -->
 
 <resources>
-    <string name="exteraAppName" translatable="false">exteraGram</string>
-    <string name="Preferences">exteraGram Preferences</string>
+    <string name="exteraAppName" translatable="false">SuperGram</string>
+    <string name="Preferences">SuperGram Preferences</string>
 
     <!-- Main Menu -->
     <string name="Links">Links</string>
@@ -1460,4 +1460,33 @@
     <string name="MessageExportStickerToSavedMessages">Sticker sent to **Saved Messages**.</string>
     <string name="MessageExportStickerToUser">Sticker sent to **%1$s**.</string>
     <string name="MessageExportStickerToChats">Sticker sent to **%1$s**.</string>
+
+    <!-- SuperGram -->
+    <string name="SuperGramAttribution">Based on exteraGram</string>
+    <string name="SuperGramAttributionSubtext">Open-source fork · GitHub</string>
+    <string name="PluginsTabExtera">exteraGram Plugins</string>
+    <string name="PluginsTabSuperGram">SuperGram Plugins</string>
+    <string name="ImportPluginFile">Import .splug / .plugin</string>
+    <string name="SuperGramPluginBadge">SuperGram (.splug)</string>
+    <string name="SuperGramPluginsEmptyTitle">No SuperGram plugins yet</string>
+    <string name="SuperGramPluginsEmptyInfo">Install a .splug plugin from any chat or import a file from your device.</string>
+    <string name="DesignStyle">Design Style</string>
+    <string name="DesignStyleMaterialYou">Material You</string>
+    <string name="DesignStyleMiuiX">MIUIX (HyperOS)</string>
+    <string name="DesignStyleWindows11">Windows 11 (Fluent)</string>
+    <string name="DesignStyleIos">iOS (Cupertino)</string>
+    <string name="DesignStyleInfo">Switches the visual design system across cards, switches, headers, borders, and lists.</string>
+    <string name="UiCustomization">Flexible UI Layout</string>
+    <string name="UiCustomizationInfo">Reorder, hide, or split tiles and settings anywhere</string>
+    <string name="UiLayoutSuperGramPrefs">SuperGram Settings Tiles</string>
+    <string name="UiLayoutMainSettings">Main Settings Tiles</string>
+    <string name="UiLayoutDrawerNav">Menu &amp; Navigation Bar</string>
+    <string name="UiLayoutPillStack">Search Bar Pills</string>
+    <string name="UiLayoutAddDivider">Add Section Split</string>
+    <string name="UiLayoutReset">Reset All Layouts</string>
+    <string name="UiLayoutHelp">Drag tiles by the handle on the right to place them anywhere. Tap a tile to show or hide it, or add dividers to group or separate cards.</string>
+    <string name="UiCardPadding">Card Side Margin</string>
+    <string name="UiCardPaddingAuto">Auto</string>
+    <string name="UiCardBorder">Card Border Stroke</string>
+    <string name="UiCardBorderInfo">Draw subtle Fluent / Glass borders around cards.</string>
 </resources>

@@ -58,6 +58,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.exteragram.messenger.ExteraConfig;
 import com.exteragram.messenger.utils.ui.ActionBarTitleCollapseHelper;
 import com.exteragram.messenger.utils.ui.ChatHeaderUiHelper;
+import com.exteragram.messenger.utils.ui.DesignStyleHelper;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LiteMode;
@@ -816,7 +817,7 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
     private boolean isCenterTitle;
 
     private boolean shouldCenterTitle() {
-        return !forceDisableCenterTitle && (isCenterTitle || centerTitleAndGlass || ExteraConfig.getCenterTitle());
+        return !forceDisableCenterTitle && (isCenterTitle || centerTitleAndGlass || DesignStyleHelper.shouldCenterActionBarTitle());
     }
 
     private int getTitleGravity() {
@@ -2515,6 +2516,10 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
     }
 
     public static int getCurrentActionBarHeight() {
+        int overrideDp = com.exteragram.messenger.utils.ui.DesignStyleHelper.getActionBarHeightOverrideDp();
+        if (overrideDp > 0) {
+            return dp(overrideDp);
+        }
         if (AndroidUtilities.isTablet()) {
             // not lower in the landscape: the glass buttons (46dp) are as far from the top as from the side (6dp)
             return dp(46 + 6 * 2);

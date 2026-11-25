@@ -10,7 +10,7 @@
 
 -->
 <resources>
-    <string name="Preferences">تنظیمات exteraGram</string>
+    <string name="Preferences">تنظیمات SuperGram</string>
     <!-- Main Menu -->
     <string name="Links">لینک‌ ها</string>
     <string name="Crowdin">ترجمه</string>

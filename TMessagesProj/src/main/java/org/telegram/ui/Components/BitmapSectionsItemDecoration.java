@@ -24,6 +24,8 @@ import androidx.annotation.NonNull;
 import androidx.core.graphics.ColorUtils;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.exteragram.messenger.utils.ui.DesignStyleHelper;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.Components.blur3.capture.IBlur3Capture;
@@ -46,6 +48,8 @@ public class BitmapSectionsItemDecoration extends RecyclerView.ItemDecoration im
     private final Paint bitmapPaint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
     private final Paint cornerVerticesPaint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
     private final Paint backgroundPaint = new Paint();
+    private final Paint borderPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final RectF borderRect = new RectF();
     private final Paint sectionPaint = new Paint();
     private final Paint verticesPaint = new Paint();
     private final RectF backgroundRect = new RectF();
@@ -660,21 +664,68 @@ public class BitmapSectionsItemDecoration extends RecyclerView.ItemDecoration im
 
     @Override
     public void onDrawOver(@NonNull Canvas canvas, @NonNull RecyclerView recyclerView, @NonNull RecyclerView.State state) {
-        if (recyclerView != parent || radius <= 0.0f) return;
-        updateBackgroundColor();
-        ensureBitmaps();
-        collectingCornerVertices = drawBackground && drawingMode == RecyclerListView.SectionsDrawingMode.DRAW_VERTICES;
-        if (collectingCornerVertices) beginCornerVertices();
-        if (parent.isAnimating()) {
-            drawAnimatedCorners(canvas);
-        } else {
-            drawStableCorners(canvas);
+        if (recyclerView != parent) return;
+        final boolean drawBorder = DesignStyleHelper.shouldDrawCardBorder();
+        if (radius > 0.0f) {
+            updateBackgroundColor();
+            ensureBitmaps();
+            collectingCornerVertices = drawBackground && drawingMode == RecyclerListView.SectionsDrawingMode.DRAW_VERTICES;
+            if (collectingCornerVertices) beginCornerVertices();
+            if (parent.isAnimating()) {
+                drawAnimatedCorners(canvas);
+            } else {
+                drawStableCorners(canvas);
+            }
+            drawForcedSectionsCorners(canvas);
+            if (collectingCornerVertices) {
+                collectingCornerVertices = false;
+                flushCornerVertices(canvas);
+            }
         }
-        drawForcedSectionsCorners(canvas);
-        if (collectingCornerVertices) {
-            collectingCornerVertices = false;
-            flushCornerVertices(canvas);
+        if (drawBorder) {
+            drawCardBorders(canvas);
         }
+    }
+
+    private void drawCardBorders(Canvas canvas) {
+        borderPaint.setStyle(Paint.Style.STROKE);
+        borderPaint.setStrokeWidth(DesignStyleHelper.getCardBorderWidthPx());
+        final float half = borderPaint.getStrokeWidth() / 2f;
+        int startIndex = -1, previousIndex = -1;
+        View start = null, previous = null;
+        for (int i = 0; i < parent.getChildCount(); i++) {
+            final View child = parent.getChildAt(i);
+            if (child == parent.getEmptyView() || child.getVisibility() != View.VISIBLE || child.getAlpha() <= 0.0f ||
+                    !isSectionItem(child) || parent.isInsideForcedSection(parent.getChildAdapterPosition(child))) {
+                drawSingleCardBorder(canvas, start, previous, half);
+                startIndex = previousIndex = -1;
+                start = previous = null;
+                continue;
+            }
+            if (start != null && Math.abs(previous.getAlpha() - child.getAlpha()) > 0.1f) {
+                drawSingleCardBorder(canvas, start, previous, half);
+                startIndex = -1;
+                start = null;
+            }
+            if (start == null) {
+                startIndex = i;
+                start = child;
+            }
+            previousIndex = i;
+            previous = child;
+        }
+        drawSingleCardBorder(canvas, start, previous, half);
+    }
+
+    private void drawSingleCardBorder(Canvas canvas, View from, View to, float half) {
+        if (from == null || to == null) return;
+        float top = RecyclerListView.top(from);
+        float bottom = RecyclerListView.bottom(to);
+        if (bottom <= top) return;
+        borderPaint.setColor(DesignStyleHelper.getCardBorderColor(null, from.getAlpha()));
+        borderRect.set(from.getX() + half, top + half, from.getX() + from.getWidth() - half, bottom - half);
+        float r = Math.max(0f, radius - half);
+        canvas.drawRoundRect(borderRect, r, r, borderPaint);
     }
 
     private void drawStableCorners(Canvas canvas) {

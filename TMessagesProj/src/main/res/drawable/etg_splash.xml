@@ -11,33 +11,32 @@
             <path
                 android:name="splash_background"
                 android:pathData="M160 53.33A106.67 106.67 0 1 0 160 266.67 106.67 106.67 0 1 0 160 53.33z"
-                android:fillColor="@color/ic_background_monet"
+                android:fillColor="@color/ic_background"
                 android:fillAlpha="0"
                 android:strokeWidth="1"/>
             <path
                 android:name="splash_icon"
-                android:pathData="M138.5 181.38c7.57 7.57 14.66 20.35 20.05 31.75 3.62 7.66 15.5 7.37 18.18-0.67l27.75-83.19c2.83-8.5-5.25-16.58-13.75-13.74l-83.09 27.74c-8.03 2.69-8.32 14.6-0.65 18.21 11.32 5.34 23.97 12.37 31.5 19.9Z"
-                android:fillColor="@color/ic_foreground_monet"
+                android:pathData="M88.11,154.78 Q77.21,151.29 87.72,146.76 L199.40,98.60 Q209.50,94.24 208.10,105.15 L192.48,226.68 Q191.13,237.15 185.29,228.36 L151.19,177.02 Q149.48,174.45 146.55,173.51 Z"
+                android:fillColor="#FFFFFFFF"
                 android:fillAlpha="0"
                 android:strokeWidth="1"/>
         </vector>
-
     </aapt:attr>
     <target android:name="splash_background">
         <aapt:attr name="android:animation">
             <set>
                 <objectAnimator
                     android:propertyName="pathData"
-                    android:startOffset="200"
-                    android:duration="400"
+                    android:startOffset="150"
+                    android:duration="380"
                     android:valueFrom="M160 85A75 75 0 1 0 160 235 75 75 0 1 0 160 85z"
                     android:valueTo="M160 53.33A106.67 106.67 0 1 0 160 266.67 106.67 106.67 0 1 0 160 53.33z"
                     android:valueType="pathType"
                     android:interpolator="@android:interpolator/fast_out_slow_in"/>
                 <objectAnimator
                     android:propertyName="fillAlpha"
-                    android:startOffset="200"
-                    android:duration="400"
+                    android:startOffset="150"
+                    android:duration="380"
                     android:valueFrom="0"
                     android:valueTo="1"
                     android:valueType="floatType"
@@ -51,16 +50,16 @@
             <set>
                 <objectAnimator
                     android:propertyName="pathData"
-                    android:startOffset="200"
-                    android:duration="400"
-                    android:valueFrom="M153.95 166.01c2.13 2.13 4.13 5.73 5.64 8.93 1.02 2.16 4.36 2.07 5.11-0.19l7.8-23.4c0.8-2.38-1.47-4.66-3.86-3.86l-23.36 7.8c-2.27 0.76-2.35 4.1-0.19 5.13 3.19 1.5 6.74 3.48 8.86 5.6Z"
-                    android:valueTo="M138.5 181.38c7.57 7.57 14.66 20.35 20.05 31.75 3.62 7.66 15.5 7.37 18.18-0.67l27.75-83.19c2.83-8.5-5.25-16.58-13.75-13.74l-83.09 27.74c-8.03 2.69-8.32 14.6-0.65 18.21 11.32 5.34 23.97 12.37 31.5 19.9Z"
+                    android:startOffset="150"
+                    android:duration="380"
+                    android:valueFrom="M140.39,158.58 Q137.42,157.62 140.29,156.39 L170.75,143.25 Q173.50,142.07 173.12,145.04 L168.86,178.19 Q168.49,181.04 166.90,178.64 L157.60,164.64 Q157.13,163.94 156.33,163.69 Z"
+                    android:valueTo="M88.11,154.78 Q77.21,151.29 87.72,146.76 L199.40,98.60 Q209.50,94.24 208.10,105.15 L192.48,226.68 Q191.13,237.15 185.29,228.36 L151.19,177.02 Q149.48,174.45 146.55,173.51 Z"
                     android:valueType="pathType"
                     android:interpolator="@android:interpolator/fast_out_slow_in"/>
                 <objectAnimator
                     android:propertyName="fillAlpha"
-                    android:startOffset="200"
-                    android:duration="400"
+                    android:startOffset="150"
+                    android:duration="380"
                     android:valueFrom="0"
                     android:valueTo="1"
                     android:valueType="floatType"
@@ -68,5 +67,4 @@
             </set>
         </aapt:attr>
     </target>
-
 </animated-vector>

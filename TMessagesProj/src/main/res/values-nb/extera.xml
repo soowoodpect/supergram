@@ -10,7 +10,7 @@
 
 -->
 <resources>
-    <string name="Preferences">exteraGram Innstillinger</string>
+    <string name="Preferences">SuperGram Innstillinger</string>
     <!-- Main Menu -->
     <string name="Links">Lenker</string>
     <string name="Crowdin">Oversett</string>

@@ -1,0 +1,123 @@
+import supergram_ui
+from base_plugin import BasePlugin
+from ui.settings import Header, Selector, Switch
+from ui.bulletin import BulletinHelper
+
+__id__ = "cyber_mint_theme"
+__name__ = "Cyber Mint UI"
+__description__ = "Кастомизация SuperGram через supergram_ui: стили, палитра, иконки и позиция FAB"
+__author__ = "SuperGram"
+__version__ = "1.1.0"
+__supergram__ = True
+__app_version__ = ">=13.2.2"
+__sdk_version__ = ">=1.4.6.7"
+
+
+class CyberMintTheme(BasePlugin):
+    def on_plugin_load(self):
+        self.apply_all(show_toast=False)
+
+    def on_plugin_unload(self):
+        supergram_ui.clear_theme(refresh=True)
+
+    def create_settings(self):
+        return [
+            Header(text="Стиль и цвета"),
+            Selector(
+                key="preset",
+                text="Пресет оформления",
+                items=["Cyber Mint (Win11)", "HyperOS Blue", "Cupertino Clean"],
+                default=0,
+                on_change=lambda _: self.apply_all(),
+            ),
+            Switch(
+                key="neon_border",
+                text="Неоновая обводка карточек",
+                default=True,
+                on_change=lambda _: self.apply_all(),
+            ),
+            Header(text="Иконки и расположение"),
+            Selector(
+                key="icon_pack",
+                text="Стиль иконок",
+                items=["Default", "Solar", "Remix"],
+                default=1,
+                on_change=lambda _: self.apply_all(),
+            ),
+            Selector(
+                key="fab_align",
+                text="Позиция плавающей кнопки (FAB)",
+                items=["Справа", "Слева", "По центру"],
+                default=0,
+                on_change=lambda _: self.apply_all(),
+            ),
+            Switch(
+                key="compact_tabs",
+                text="Плавающий навбар (только иконки) + Профиль слева",
+                default=False,
+                on_change=lambda _: self.apply_all(),
+            ),
+        ]
+
+    def apply_all(self, show_toast: bool = True):
+        preset = self.get_setting("preset", 0)
+        neon = self.get_setting("neon_border", True)
+        icon_pack_idx = self.get_setting("icon_pack", 1)
+        fab_idx = self.get_setting("fab_align", 0)
+        compact_tabs = self.get_setting("compact_tabs", False)
+
+        if preset == 0:
+            supergram_ui.set_design_style("windows_11", refresh=False)
+            supergram_ui.set_card_style(radius=10, padding=14, border=True, refresh=False)
+            supergram_ui.set_palette(
+                accent="#FF00C896",
+                background="#FF0F1419",
+                surface="#FF172028",
+                dark=True,
+                refresh=False,
+            )
+            supergram_ui.set_palette(
+                accent="#FF00876C",
+                background="#FFEFF5F4",
+                surface="#FFFFFFFF",
+                dark=False,
+                refresh=False,
+            )
+            if neon:
+                supergram_ui.set_card_border_style(
+                    light_color="#4400876C",
+                    dark_color="#5500C896",
+                    width=1.2,
+                    refresh=False,
+                )
+            else:
+                supergram_ui.set_card_border_style(width=0, refresh=False)
+        elif preset == 1:
+            supergram_ui.clear_theme(refresh=False)
+            supergram_ui.set_design_style("miuix", refresh=False)
+            supergram_ui.set_card_style(radius=16, padding=14, border=False, refresh=False)
+        else:
+            supergram_ui.clear_theme(refresh=False)
+            supergram_ui.set_design_style("ios", refresh=False)
+            supergram_ui.set_card_style(radius=12, padding=16, center_title=True, refresh=False)
+
+        packs = ["default", "solar", "remix"]
+        supergram_ui.set_icon_pack(packs[icon_pack_idx % len(packs)], refresh=False)
+
+        fab_aligns = ["right", "left", "center"]
+        supergram_ui.set_fab_layout(
+            align=fab_aligns[fab_idx % len(fab_aligns)],
+            square=(preset == 0),
+            refresh=False,
+        )
+
+        if compact_tabs:
+            supergram_ui.set_navigation_bar(mode="floating", new_style=True, hide_labels=True, refresh=False)
+            supergram_ui.set_tabs_layout(order=["profile", "chats", "feed", "contacts", "settings", "calls"], refresh=False)
+        else:
+            supergram_ui.set_navigation_bar(mode="show", hide_labels=False, refresh=False)
+            supergram_ui.set_tabs_layout(order=["chats", "feed", "contacts", "settings", "calls", "profile"], refresh=False)
+
+        supergram_ui.refresh(rebuild_all=True)
+        if show_toast:
+            BulletinHelper.show_success("Кастомизация .splug применена")

@@ -10,7 +10,7 @@
 
 -->
 <resources>
-    <string name="Preferences">exteraGram parametrlari</string>
+    <string name="Preferences">SuperGram parametrlari</string>
     <!-- Main Menu -->
     <string name="Links">Havolalar</string>
     <string name="Categories">Turkum</string>

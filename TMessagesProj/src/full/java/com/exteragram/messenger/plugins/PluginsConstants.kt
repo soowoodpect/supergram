@@ -30,6 +30,7 @@ class PluginsConstants private constructor() {
 
         const val PLUGINS = "plugins"
         const val PLUGINS_EXT = ".plugin"
+        const val SPLUG_EXT = ".splug"
         const val PLUGINS_SDK = "plugins-sdk"
 
         const val CREATE_SETTINGS = "create_settings"

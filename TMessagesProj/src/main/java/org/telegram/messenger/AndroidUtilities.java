@@ -2525,6 +2525,10 @@ public class AndroidUtilities {
     }
 
     public static Typeface getTypeface(String assetPath) {
+        Typeface pluginTypeface = com.exteragram.messenger.utils.ui.DesignStyleHelper.getFontOverride(assetPath);
+        if (pluginTypeface != null) {
+            return pluginTypeface;
+        }
         return typefaceCache.computeIfAbsent(assetPath, path -> {
             try {
                 if (!ExteraConfig.getUseSystemFonts()) {

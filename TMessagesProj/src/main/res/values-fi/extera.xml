@@ -10,7 +10,7 @@
 
 -->
 <resources>
-    <string name="Preferences">exteraGram Asetukset</string>
+    <string name="Preferences">SuperGram Asetukset</string>
     <!-- Main Menu -->
     <string name="Links">exteraGram-asetukset</string>
     <string name="Crowdin">Käännä</string>

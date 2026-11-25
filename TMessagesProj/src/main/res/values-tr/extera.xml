@@ -10,7 +10,7 @@
 
 -->
 <resources>
-    <string name="Preferences">exteraGram Ayarları</string>
+    <string name="Preferences">SuperGram Ayarları</string>
     <!-- Main Menu -->
     <string name="Links">Bağlantılar</string>
     <string name="Crowdin">Çeviriye Katkıda Bulun</string>

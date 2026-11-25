@@ -183,6 +183,14 @@ abstract class BasePreferencesActivity : BaseFragment() {
 
     override fun onResume() {
         super.onResume()
+        fragmentView?.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundGray))
+        actionBar?.apply {
+            setTitleColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText))
+            setItemsColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText), false)
+            refreshTitlePosition(false)
+        }
+        listView.setSections()
+        listView.invalidateItemDecorations()
         listView.adapter?.update(false)
         Bulletin.addDelegate(this, object : Bulletin.Delegate {
             override fun getTopOffset(tag: Int): Int =

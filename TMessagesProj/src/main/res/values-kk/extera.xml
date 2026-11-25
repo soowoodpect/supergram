@@ -10,7 +10,7 @@
 
 -->
 <resources>
-    <string name="Preferences">exteraGram Параметрлері</string>
+    <string name="Preferences">SuperGram Параметрлері</string>
     <!-- Main Menu -->
     <string name="Links">Сілтемелер</string>
     <string name="Crowdin">Аударма</string>

@@ -15,6 +15,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.exteragram.messenger.ExteraConfig;
+import com.exteragram.messenger.utils.ui.DesignStyleHelper;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.R;
@@ -450,10 +451,10 @@ public class UniversalRecyclerView extends RecyclerListView {
     }
 
     public void setSections() {
-        setSections(dp(12), dp(ExteraConfig.getSectionRadiusDp()), false);
+        setSections(dp(DesignStyleHelper.getEffectiveSectionPaddingDp()), dp(DesignStyleHelper.getEffectiveSectionRadiusDp()), false);
     }
     public void setSections(boolean topPadding) {
-        setSections(dp(12), dp(ExteraConfig.getSectionRadiusDp()), topPadding);
+        setSections(dp(DesignStyleHelper.getEffectiveSectionPaddingDp()), dp(DesignStyleHelper.getEffectiveSectionRadiusDp()), topPadding);
     }
     public void setSections(int padding, float roundRadius, boolean topPadding) {
         super.setSections(

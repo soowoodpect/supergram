@@ -1,0 +1,580 @@
+from base_plugin import BasePlugin
+from hook_utils import find_class, get_method, get_private_field
+from android_utils import run_on_ui_thread
+from ui.settings import Header, Switch
+from ui.bulletin import BulletinHelper
+from android.graphics import LinearGradient, Paint, Shader
+from android.view import Gravity, View
+from androidx.core.view import ViewCompat
+from java import jarray, jfloat, jint
+from java.lang import Float as JFloat, Integer as JInteger
+from java.lang.ref import WeakReference
+from org.telegram.messenger import AndroidUtilities
+from org.telegram.ui.ActionBar import Theme
+from org.telegram.ui.Components import SizeNotifierFrameLayout
+import supergram_ui
+
+__id__ = "top_nav_bottom_search"
+__name__ = "Top Nav & Bottom Search"
+__description__ = "Плагин-хук: переносит нижнюю панель вкладок наверх, а панель поиска и папок — вниз (без модификации клиента)"
+__author__ = "SuperGram"
+__version__ = "1.0.2"
+__supergram__ = True
+__app_version__ = ">=13.2.2"
+__sdk_version__ = ">=1.4.6.5"
+
+
+def _dp(val: float) -> int:
+    return AndroidUtilities.dp(float(val))
+
+
+def _rgba_int(alpha: int, rgb: int) -> int:
+    v = ((alpha & 0xFF) << 24) | (rgb & 0x00FFFFFF)
+    return v - 0x100000000 if v >= 0x80000000 else v
+
+
+def _is_main_dialogs(d) -> bool:
+    if d is None or get_private_field(d, "commentView") is not None:
+        return False
+    cid = get_private_field(d, "communityId")
+    return cid is None or int(cid) == 0
+
+
+class TopNavBottomSearchPlugin(BasePlugin):
+    def on_plugin_load(self):
+        self._unhooks = []
+        self._main_refs = []
+        self._rv_measure_d = None
+        self._allow_real_bar_heights = False
+        self._fade_paint = Paint(Paint.ANTI_ALIAS_FLAG)
+        self._fade_key = None
+        self._active = bool(self.get_setting("enabled_swap", True))
+        if self._active:
+            self._install_hooks()
+            self._apply_live_ui(rebuild=True)
+
+    def on_plugin_unload(self):
+        self._active = False
+        self._remove_hooks()
+        self._restore_live_views(rebuild=True)
+
+    def create_settings(self):
+        return [
+            Header(text="Расположение панелей"),
+            Switch(
+                key="enabled_swap",
+                text="Навигация сверху, поиск и папки снизу",
+                default=True,
+                subtext="Переносит нижнюю панель вкладок наверх, а поиск и вкладки папок — вниз экрана",
+                on_change=self._on_toggle,
+            ),
+        ]
+
+    def _on_toggle(self, val):
+        enable = bool(val)
+        self._active = enable
+        if enable:
+            if not self._unhooks:
+                self._install_hooks()
+            self._apply_live_ui(rebuild=True)
+        else:
+            self._remove_hooks()
+            self._restore_live_views(rebuild=True)
+        BulletinHelper.show_info("Расположение панелей обновлено")
+
+    def _track_main_activity(self, act):
+        if act is None:
+            return
+        alive = []
+        seen = False
+        for ref in self._main_refs:
+            obj = ref.get()
+            if obj is not None:
+                alive.append(ref)
+                if obj == act:
+                    seen = True
+        if not seen:
+            alive.append(WeakReference(act))
+        self._main_refs = alive
+
+    def _request_main_insets(self):
+        alive = []
+        for ref in self._main_refs:
+            act = ref.get()
+            if act is None:
+                continue
+            alive.append(ref)
+            fv = act.getFragmentView()
+            if fv is not None:
+                ViewCompat.requestApplyInsets(fv)
+        self._main_refs = alive
+
+    def _apply_live_ui(self, rebuild: bool = True):
+        def _run():
+            self._request_main_insets()
+            supergram_ui.refresh(rebuild_all=rebuild)
+        run_on_ui_thread(_run)
+
+    def _restore_live_views(self, rebuild: bool = True):
+        def _run():
+            alive = []
+            for ref in self._main_refs:
+                act = ref.get()
+                if act is None:
+                    continue
+                alive.append(ref)
+                wrapper = get_private_field(act, "tabsViewWrapper")
+                tabs_view = get_private_field(act, "tabsView")
+                view_pager = get_private_field(act, "viewPager")
+                if wrapper is not None:
+                    wlp = wrapper.getLayoutParams()
+                    if wlp is not None and wlp.gravity != Gravity.BOTTOM:
+                        wlp.gravity = Gravity.BOTTOM
+                        wrapper.setLayoutParams(wlp)
+                    wrapper.setTranslationY(0.0)
+                if tabs_view is not None:
+                    tlp = tabs_view.getLayoutParams()
+                    want_g = Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL
+                    if tlp is not None and tlp.gravity != want_g:
+                        tlp.gravity = want_g
+                        tabs_view.setLayoutParams(tlp)
+                if view_pager is not None:
+                    vp_lp = view_pager.getLayoutParams()
+                    if vp_lp is not None and vp_lp.topMargin != 0:
+                        vp_lp.topMargin = 0
+                        view_pager.setLayoutParams(vp_lp)
+                fv = act.getFragmentView()
+                if fv is not None:
+                    ViewCompat.requestApplyInsets(fv)
+            self._main_refs = alive
+            supergram_ui.refresh(rebuild_all=rebuild)
+        run_on_ui_thread(_run)
+
+    def _remove_hooks(self):
+        for uh in getattr(self, "_unhooks", []):
+            try:
+                if uh is not None:
+                    self.unhook_method(uh)
+            except Exception:
+                pass
+        self._unhooks = []
+        self._rv_measure_d = None
+        self._allow_real_bar_heights = False
+
+    def _add_hook(self, method, before=None, after=None):
+        if method is None:
+            return
+        h = self.hook_method(method, before=before, after=after)
+        if h is not None:
+            self._unhooks.append(h)
+
+    def _real_search_height(self, d) -> int:
+        prev = self._allow_real_bar_heights
+        self._allow_real_bar_heights = True
+        try:
+            m = self._m_get_search_h
+            return int(m.invoke(d)) if m is not None else 0
+        finally:
+            self._allow_real_bar_heights = prev
+
+    def _real_filter_vis(self, d) -> float:
+        prev = self._allow_real_bar_heights
+        self._allow_real_bar_heights = True
+        try:
+            m = self._m_filter_vis
+            return float(m.invoke(d, False)) if m is not None else 0.0
+        finally:
+            self._allow_real_bar_heights = prev
+
+    def _dialogs_bottom_extra(self, d) -> int:
+        if not _is_main_dialogs(d):
+            return 0
+        if get_private_field(d, "actionModeFullyShowed"):
+            search_h = 0
+        else:
+            search_h = self._real_search_height(d)
+        filter_tabs = get_private_field(d, "filterTabsView")
+        filter_h = 0
+        if filter_tabs is not None and filter_tabs.getVisibility() == View.VISIBLE:
+            filter_h = int(_dp(50) * self._real_filter_vis(d))
+        total = search_h + filter_h
+        if total <= 0:
+            return 0
+        search_prog = float(get_private_field(d, "searchAnimationProgress") or 0.0)
+        return int((total + _dp(12)) * max(0.0, 1.0 - search_prog))
+
+    def _sync_search_field_pos(self, d):
+        search_field = get_private_field(d, "fragmentSearchField")
+        if search_field is None or search_field.getVisibility() == View.GONE:
+            return
+        search_prog = float(get_private_field(d, "searchAnimationProgress") or 0.0)
+        mode_prog = float(get_private_field(d, "progressToActionMode") or 0.0)
+        ab = get_private_field(d, "actionBar")
+        top_target = (ab.getHeight() if ab is not None else 0) + _dp(2)
+        search_move = (top_target - search_field.getTop()) * search_prog
+        hide_move = _dp(140) * mode_prog * (1.0 - search_prog)
+        search_field.setTranslationY(search_move + hide_move)
+
+    def _draw_bottom_fade(self, cv, d, canvas):
+        if SizeNotifierFrameLayout.drawingBlur:
+            return
+        search_prog = float(get_private_field(d, "searchAnimationProgress") or 0.0)
+        mode_prog = float(get_private_field(d, "progressToActionMode") or 0.0)
+        fade_alpha = 1.0 - max(search_prog, mode_prog)
+        if fade_alpha <= 0.01:
+            return
+
+        h_total = int(cv.getMeasuredHeight())
+        w_total = int(cv.getMeasuredWidth())
+        if h_total <= 0 or w_total <= 0:
+            return
+
+        bar_top = h_total
+        search_field = get_private_field(d, "fragmentSearchField")
+        if search_field is not None and search_field.getVisibility() == View.VISIBLE:
+            bar_top = min(bar_top, int(search_field.getTop()))
+        filter_tabs = get_private_field(d, "filterTabsView")
+        if filter_tabs is not None and filter_tabs.getVisibility() == View.VISIBLE:
+            bar_top = min(bar_top, int(filter_tabs.getTop()))
+        if bar_top >= h_total:
+            return
+
+        fade_start = float(max(0, bar_top - _dp(26)))
+        fade_end = float(h_total)
+        rgb = int(d.getThemedColor(Theme.key_windowBackgroundWhite)) & 0x00FFFFFF
+        key = (rgb, int(fade_start), int(fade_end))
+        if key != self._fade_key:
+            colors = jarray(jint)([
+                _rgba_int(0, rgb),
+                _rgba_int(215, rgb),
+                _rgba_int(248, rgb),
+                _rgba_int(255, rgb),
+            ])
+            stops = jarray(jfloat)([0.0, 0.28, 0.56, 1.0])
+            self._fade_paint.setShader(LinearGradient(0.0, fade_start, 0.0, fade_end, colors, stops, Shader.TileMode.CLAMP))
+            self._fade_key = key
+
+        self._fade_paint.setAlpha(int(255 * fade_alpha))
+        canvas.drawRect(0.0, fade_start, float(w_total), fade_end, self._fade_paint)
+
+    def _install_hooks(self):
+        if self._unhooks:
+            return
+
+        ui_helper_cls = find_class("com.exteragram.messenger.utils.ui.tabs.MainTabsUiHelper")
+        main_tabs_cls = find_class("org.telegram.ui.MainTabsActivity")
+        dialogs_cls = find_class("org.telegram.ui.DialogsActivity")
+        content_cls = find_class("org.telegram.ui.DialogsActivity$ContentView")
+        rv_cls = find_class("org.telegram.ui.DialogsActivity$DialogsRecyclerView")
+
+        self._m_tabs_height_dp = get_method(ui_helper_cls, "getTabsViewHeightDp")
+        self._m_nav_m3 = get_method(ui_helper_cls, "isMaterial3NavigationBar")
+        self._m_get_search_h = get_method(dialogs_cls, "getSearchFieldHeight")
+        self._m_filter_vis = get_method(dialogs_cls, "getFilterTabsVisibilityFactor", "boolean")
+
+        # 1. MainTabsUiHelper: zero bottom nav space when nav bar moved to top
+        def after_zero_if_active(param):
+            if self._active:
+                param.setResult(JInteger(0))
+
+        self._add_hook(get_method(ui_helper_cls, "getAdditionalNavigationBarHeight", "boolean"), after=after_zero_if_active)
+        self._add_hook(get_method(ui_helper_cls, "getFloatingTabsPadding", "boolean"), after=after_zero_if_active)
+        self._add_hook(get_method(ui_helper_cls, "getTabsFabOffset", "boolean"), after=after_zero_if_active)
+
+        def after_blur_bounds(param):
+            if not self._active:
+                return
+            out_rect = param.args[0]
+            root_view = param.args[1]
+            top = float(AndroidUtilities.statusBarHeight)
+            h_dp = int(self._m_tabs_height_dp.invoke(None))
+            out_rect.set(0.0, top, float(root_view.getMeasuredWidth()), top + float(_dp(h_dp)))
+
+        self._add_hook(get_method(ui_helper_cls, "setBlurBounds", "android.graphics.RectF", "android.view.View", "int"), after=after_blur_bounds)
+
+        # 2. MainTabsActivity: place tabsViewWrapper & tabsView at TOP, hide bottom fadeView
+        def after_main_insets(param):
+            act = param.thisObject
+            self._track_main_activity(act)
+            if not self._active:
+                return
+            wrapper = get_private_field(act, "tabsViewWrapper")
+            tabs_view = get_private_field(act, "tabsView")
+            view_pager = get_private_field(act, "viewPager")
+            fade_view = get_private_field(act, "fadeView")
+            if wrapper is None or tabs_view is None or view_pager is None:
+                return
+
+            insets_obj = param.args[1]
+            sys_insets = AndroidUtilities.getDefaultWindowInsets(insets_obj, False)
+            h_dp = int(self._m_tabs_height_dp.invoke(None))
+            is_m3 = bool(self._m_nav_m3.invoke(None))
+            tabs_px = _dp(h_dp)
+
+            wlp = wrapper.getLayoutParams()
+            if wlp is not None and wlp.gravity != Gravity.TOP:
+                wlp.gravity = Gravity.TOP
+                wrapper.setLayoutParams(wlp)
+            wrapper.setPadding(sys_insets.left, sys_insets.top, sys_insets.right, 0)
+
+            tlp = tabs_view.getLayoutParams()
+            want_g = Gravity.TOP | Gravity.CENTER_HORIZONTAL
+            if tlp is not None:
+                changed = False
+                if tlp.gravity != want_g:
+                    tlp.gravity = want_g
+                    changed = True
+                if tlp.height != tabs_px:
+                    tlp.height = tabs_px
+                    changed = True
+                if changed:
+                    tabs_view.setLayoutParams(tlp)
+
+            pad_v = 0 if is_m3 else _dp(12)
+            if tabs_view.getPaddingBottom() != pad_v or tabs_view.getPaddingTop() != pad_v:
+                tabs_view.setPadding(tabs_view.getPaddingLeft(), pad_v, tabs_view.getPaddingRight(), pad_v)
+
+            is_visible = tabs_view.getVisibility() == View.VISIBLE
+            vp_lp = view_pager.getLayoutParams()
+            if vp_lp is not None:
+                want_top = tabs_px if is_visible else 0
+                if vp_lp.topMargin != want_top or vp_lp.bottomMargin != 0:
+                    vp_lp.topMargin = want_top
+                    vp_lp.bottomMargin = 0
+                    view_pager.setLayoutParams(vp_lp)
+
+            if fade_view is not None:
+                fade_view.setAlpha(0.0)
+                fade_view.setVisibility(View.GONE)
+
+        self._add_hook(get_method(main_tabs_cls, "onApplyWindowInsets", "android.view.View", "androidx.core.view.WindowInsetsCompat"), after=after_main_insets)
+
+        def after_fade(param):
+            if not self._active:
+                return
+            fv = get_private_field(param.thisObject, "fadeView")
+            if fv is not None:
+                fv.setAlpha(0.0)
+                fv.setVisibility(View.GONE)
+
+        self._add_hook(get_method(main_tabs_cls, "checkUi_fadeView"), after=after_fade)
+
+        def after_tabs_pos(param):
+            if not self._active:
+                return
+            wrapper = get_private_field(param.thisObject, "tabsViewWrapper")
+            anim = get_private_field(param.thisObject, "animatorTabsVisible")
+            if wrapper is not None and anim is not None:
+                factor = float(anim.getFloatValue())
+                wrapper.setTranslationY(-_dp(40) * (1.0 - factor))
+
+        self._add_hook(get_method(main_tabs_cls, "checkUi_tabsPosition"), after=after_tabs_pos)
+
+        # 3. DialogsActivity: move filterTabsView & fragmentSearchField to BOTTOM
+        def after_content_layout(param):
+            if not self._active:
+                return
+            cv = param.thisObject
+            d = get_private_field(cv, "this$0")
+            if not _is_main_dialogs(d):
+                return
+
+            filter_tabs = get_private_field(d, "filterTabsView")
+            search_field = get_private_field(d, "fragmentSearchField")
+            nav_h = int(get_private_field(d, "navigationBarHeight") or 0)
+            add_nav_h = int(get_private_field(d, "additionNavigationBarHeight") or 0)
+            h_total = int(param.args[4]) - int(param.args[2])
+            bottom_base = h_total - nav_h - add_nav_h
+
+            fh = 0
+            if filter_tabs is not None and filter_tabs.getVisibility() == View.VISIBLE:
+                fh = filter_tabs.getMeasuredHeight()
+                ft_top = bottom_base - fh - _dp(4)
+                filter_tabs.layout(filter_tabs.getLeft(), ft_top, filter_tabs.getRight(), ft_top + fh)
+
+            if search_field is not None and search_field.getVisibility() != View.GONE:
+                sh = search_field.getMeasuredHeight()
+                sf_top = bottom_base - fh - sh - (_dp(8) if fh > 0 else _dp(4))
+                search_field.layout(search_field.getLeft(), sf_top, search_field.getRight(), sf_top + sh)
+
+            ab = get_private_field(d, "actionBar")
+            if ab is not None:
+                top_base = ab.getMeasuredHeight()
+                stories_cell = get_private_field(d, "dialogStoriesCell")
+                if get_private_field(d, "hasStories") and stories_cell is not None and stories_cell.getVisibility() != View.GONE:
+                    top_base += stories_cell.getMeasuredHeight()
+                top_panel = get_private_field(d, "topPanelLayout")
+                if top_panel is not None and top_panel.getVisibility() != View.GONE:
+                    tp_h = top_panel.getMeasuredHeight()
+                    top_panel.layout(top_panel.getLeft(), top_base, top_panel.getRight(), top_base + tp_h)
+                top_fade = get_private_field(d, "topBubblesFadeView")
+                if top_fade is not None and top_fade.getVisibility() != View.GONE:
+                    tf_h = top_fade.getMeasuredHeight()
+                    top_fade.layout(top_fade.getLeft(), top_base, top_fade.getRight(), top_base + tf_h)
+
+        self._add_hook(get_method(content_cls, "onLayout", "boolean", "int", "int", "int", "int"), after=after_content_layout)
+
+        def after_ab_full_height(param):
+            if not self._active:
+                return
+            d = get_private_field(param.thisObject, "this$0")
+            if not _is_main_dialogs(d):
+                return
+            search_h = self._real_search_height(d)
+            if search_h <= 0:
+                return
+            search_prog = float(get_private_field(d, "searchAnimationProgress") or 0.0)
+            mode_prog = float(get_private_field(d, "progressToActionMode") or 0.0)
+            rs_prog = 0.0
+            rsc = get_private_field(d, "rightSlidingDialogContainer")
+            if rsc is not None and bool(rsc.hasFragment()):
+                rs_prog = float(get_private_field(rsc, "openedProgress") or 0.0)
+            sub = int(search_h * (1.0 - mode_prog) * (1.0 - search_prog) * (1.0 - rs_prog))
+            if sub > 0:
+                param.setResult(JInteger(max(0, int(param.getResult()) - sub)))
+
+        self._add_hook(get_method(content_cls, "getActionBarFullHeight"), after=after_ab_full_height)
+
+        def after_dispatch_draw(param):
+            if not self._active:
+                return
+            d = get_private_field(param.thisObject, "this$0")
+            if _is_main_dialogs(d):
+                self._sync_search_field_pos(d)
+
+        self._add_hook(get_method(content_cls, "dispatchDraw", "android.graphics.Canvas"), after=after_dispatch_draw)
+
+        def before_draw_child(param):
+            if not self._active:
+                return
+            cv = param.thisObject
+            d = get_private_field(cv, "this$0")
+            if not _is_main_dialogs(d):
+                return
+            if param.args[1] == get_private_field(d, "fragmentSearchField"):
+                self._sync_search_field_pos(d)
+
+        def after_draw_child(param):
+            if not self._active:
+                return
+            cv = param.thisObject
+            d = get_private_field(cv, "this$0")
+            if not _is_main_dialogs(d):
+                return
+            view_pages = get_private_field(d, "viewPages")
+            if view_pages is None:
+                return
+            n_vp = len(view_pages)
+            if n_vp == 0:
+                return
+            vp0 = view_pages[0]
+            vp1 = view_pages[1] if n_vp > 1 else None
+            vp1_vis = vp1 is not None and vp1.getVisibility() == View.VISIBLE
+            child = param.args[1]
+            if child == (vp1 if vp1_vis else vp0):
+                self._draw_bottom_fade(cv, d, param.args[0])
+
+        self._add_hook(
+            get_method(content_cls, "drawChild", "android.graphics.Canvas", "android.view.View", "long"),
+            before=before_draw_child,
+            after=after_draw_child,
+        )
+
+        def after_context_pos(param):
+            if not self._active:
+                return
+            d = param.thisObject
+            if not _is_main_dialogs(d):
+                return
+
+            filter_tabs = get_private_field(d, "filterTabsView")
+            top_panel = get_private_field(d, "topPanelLayout")
+            search_field = get_private_field(d, "fragmentSearchField")
+            search_prog = float(get_private_field(d, "searchAnimationProgress") or 0.0)
+            mode_prog = float(get_private_field(d, "progressToActionMode") or 0.0)
+
+            if filter_tabs is not None:
+                hide_prog = max(search_prog, mode_prog)
+                filter_tabs.setTranslationY(_dp(96) * hide_prog)
+                if top_panel is not None:
+                    ft_shift = _dp(43) * float(filter_tabs.getAlpha())
+                    search_off = _dp(4) * float(search_field.getAlpha()) if (search_field is not None and search_field.getVisibility() == View.VISIBLE) else 0.0
+                    top_panel.setTranslationY(top_panel.getTranslationY() - ft_shift + search_off)
+
+        self._add_hook(get_method(dialogs_cls, "updateContextViewPosition"), after=after_context_pos)
+
+        # Suppress top search/filter height only inside DialogsRecyclerView.onMeasure (avoids relayout loops)
+        def before_rv_measure(param):
+            if not self._active:
+                return
+            d = get_private_field(param.thisObject, "this$0")
+            if _is_main_dialogs(d):
+                self._rv_measure_d = d
+
+        def after_rv_measure(param):
+            self._rv_measure_d = None
+
+        self._add_hook(get_method(rv_cls, "onMeasure", "int", "int"), before=before_rv_measure, after=after_rv_measure)
+
+        def after_search_height(param):
+            if self._active and not self._allow_real_bar_heights and param.thisObject == self._rv_measure_d:
+                param.setResult(JInteger(0))
+
+        self._add_hook(self._m_get_search_h, after=after_search_height)
+
+        def after_filter_vis(param):
+            if self._active and not self._allow_real_bar_heights and param.thisObject == self._rv_measure_d:
+                param.setResult(JFloat(0.0))
+
+        self._add_hook(self._m_filter_vis, after=after_filter_vis)
+
+        def after_bottom_pad(param):
+            if not self._active:
+                return
+            extra = self._dialogs_bottom_extra(param.thisObject)
+            if extra > 0:
+                param.setResult(JInteger(int(param.getResult()) + extra))
+
+        self._add_hook(get_method(dialogs_cls, "calculateListViewPaddingBottom"), after=after_bottom_pad)
+
+        def after_max_scroll(param):
+            if not self._active:
+                return
+            d = param.thisObject
+            if not _is_main_dialogs(d):
+                return
+            search_h = self._real_search_height(d)
+            if search_h > 0:
+                param.setResult(JInteger(max(0, int(param.getResult()) - search_h)))
+
+        self._add_hook(get_method(dialogs_cls, "getMaxScrollYOffset"), after=after_max_scroll)
+
+        def after_fab_offset(param):
+            if not self._active:
+                return
+            d = param.thisObject
+            extra = self._dialogs_bottom_extra(d)
+            if extra <= 0:
+                return
+            fab3 = get_private_field(d, "floatingButton3")
+            fab_stories = get_private_field(d, "floatingButtonStories")
+            story_hint = get_private_field(d, "storyHint")
+            if fab3 is not None:
+                fab3.setTranslationY(fab3.getTranslationY() - extra)
+            if fab_stories is not None:
+                fab_stories.setTranslationY(fab_stories.getTranslationY() - extra)
+            if story_hint is not None:
+                story_hint.setTranslationY(story_hint.getTranslationY() - extra)
+
+        self._add_hook(get_method(dialogs_cls, "updateFloatingButtonOffset"), after=after_fab_offset)
+
+        def after_undo_offset(param):
+            if not self._active:
+                return
+            d = param.thisObject
+            if not _is_main_dialogs(d):
+                return
+            extra = self._dialogs_bottom_extra(d)
+            param.setResult(JInteger(extra))
+
+        self._add_hook(get_method(dialogs_cls, "getCurrentUndoViewOffset"), after=after_undo_offset)

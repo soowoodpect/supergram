@@ -23,6 +23,7 @@ import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.utils.ViewOutlineProviderImpl;
 
 import com.exteragram.messenger.ExteraConfig;
+import com.exteragram.messenger.utils.ui.DesignStyleHelper;
 import com.exteragram.messenger.utils.ui.FabUiHelper;
 import com.exteragram.messenger.utils.ui.UIUtil;
 import org.telegram.ui.ActionBar.Theme;
@@ -195,22 +196,28 @@ public class FragmentFloatingButton extends FrameLayout implements FactorAnimato
     }
 
     public static FrameLayout.LayoutParams createSubButtonLayoutParams() {
+        int side = DesignStyleHelper.getEffectiveFabSideMarginDp(20);
+        int bottom = DesignStyleHelper.getEffectiveFabBottomMarginDp(FabUiHelper.getSubFabBottomMarginDp());
         return LayoutHelper.createFrame(FabUiHelper.getFabSizeDp(), FabUiHelper.getFabSizeDp(),
-                (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.BOTTOM,
-                20, 0, 20, FabUiHelper.getSubFabBottomMarginDp());
+                DesignStyleHelper.getEffectiveFabGravity(LocaleController.isRTL),
+                side, 0, side, bottom);
     }
 
     public static FrameLayout.LayoutParams createDefaultLayoutParams() {
+        int side = DesignStyleHelper.getEffectiveFabSideMarginDp(20);
+        int bottom = DesignStyleHelper.getEffectiveFabBottomMarginDp(FabUiHelper.getFabBottomMarginDp());
         return LayoutHelper.createFrame(FabUiHelper.getFabSizeDp(), FabUiHelper.getFabSizeDp(),
-                (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.BOTTOM,
-                20, 0, 20, FabUiHelper.getFabBottomMarginDp());
+                DesignStyleHelper.getEffectiveFabGravity(LocaleController.isRTL),
+                side, 0, side, bottom);
     }
 
 
     public static FrameLayout.LayoutParams createDefaultLayoutParamsBig() {
+        int side = DesignStyleHelper.getEffectiveFabSideMarginDp(20);
+        int bottom = DesignStyleHelper.getEffectiveFabBottomMarginDp(FabUiHelper.getFabBottomMarginDp());
         return LayoutHelper.createFrame(FabUiHelper.LARGE_FAB_SIZE_DP, FabUiHelper.LARGE_FAB_SIZE_DP,
-                (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.BOTTOM,
-                20, 0, 20, FabUiHelper.getFabBottomMarginDp());
+                DesignStyleHelper.getEffectiveFabGravity(LocaleController.isRTL),
+                side, 0, side, bottom);
     }
 
     private float additionalTranslationY;

@@ -40,6 +40,7 @@ import com.exteragram.messenger.icons.ui.components.ReplaceIconBottomSheet
 import com.exteragram.messenger.icons.ui.picker.IconPickerController
 import com.exteragram.messenger.utils.backgroundScope
 import com.exteragram.messenger.utils.chats.ChatUtils
+import com.exteragram.messenger.utils.ui.DesignStyleHelper
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.isActive
@@ -420,14 +421,30 @@ object IconManager {
         }
     }
 
+    private val customFileCache = ConcurrentHashMap<String, Bitmap>()
+
+    @JvmStatic
+    fun clearPluginCaches() {
+        customFileCache.clear()
+        resolvedCache.clear()
+        sourceCache.evictAll()
+    }
+
     fun getDrawable(
         resId: Int,
         density: Int,
         theme: Resources.Theme?,
         resources: Resources = ApplicationLoader.applicationContext.resources
     ): Drawable? {
-        if (iconOwnerMap.isEmpty()) return null
         val targetDensity = if (density == 0) AndroidUtilities.displayMetrics.densityDpi else density
+        DesignStyleHelper.getActiveIconFile(resId)?.let { customPath ->
+            val cacheKey = "$customPath|$resId|$targetDensity"
+            val bmp = customFileCache.getOrPut(cacheKey) {
+                createBitmapFromFile(customPath, resId, targetDensity, theme) ?: return@let
+            }
+            return bmp.toIconDrawable(resources)
+        }
+        if (iconOwnerMap.isEmpty()) return null
         val key = resolvedCacheKey(resId, targetDensity)
         val cachedBitmap = resolvedCache.get(key)?.let { sourceCache[it] }
         if (cachedBitmap != null) {
@@ -746,6 +763,8 @@ object IconManager {
     }
 
     fun getIcon(resId: Int): Int {
+        val pluginReplacement = DesignStyleHelper.getActiveIconReplacement(resId)
+        if (pluginReplacement != 0) return pluginReplacement
         val map = basePreinstalledMap ?: return resId
         val mapped = map.get(resId, -1)
         return if (mapped != -1) mapped else resId

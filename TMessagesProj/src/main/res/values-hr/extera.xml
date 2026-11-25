@@ -10,7 +10,7 @@
 
 -->
 <resources>
-    <string name="Preferences">exteraGram Postavke</string>
+    <string name="Preferences">SuperGram Postavke</string>
     <!-- Main Menu -->
     <string name="Links">Linkovi</string>
     <string name="Crowdin">Prevedi</string>

@@ -10,7 +10,7 @@
 
 -->
 <resources>
-    <string name="Preferences">exteraGram beállítások</string>
+    <string name="Preferences">SuperGram beállítások</string>
     <!-- Main Menu -->
     <string name="Links">Linkek</string>
     <string name="Crowdin">Fordítás</string>

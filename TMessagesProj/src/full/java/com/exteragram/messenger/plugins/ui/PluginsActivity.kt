@@ -14,19 +14,27 @@
 
 package com.exteragram.messenger.plugins.ui
 
+import android.app.Activity
 import android.content.Context
 import android.content.DialogInterface
+import android.content.Intent
+import android.graphics.Color
+import android.provider.OpenableColumns
 import android.text.SpannableStringBuilder
 import android.text.Spanned
 import android.text.TextUtils
+import android.util.TypedValue
 import android.view.Gravity
 import android.view.View
 import android.widget.EditText
+import android.widget.LinearLayout
 import android.widget.TextView
+import androidx.core.graphics.ColorUtils
 import androidx.recyclerview.widget.RecyclerView
 import com.exteragram.messenger.editor
 import com.exteragram.messenger.pinnedPlugins
 import com.exteragram.messenger.plugins.Plugin
+import com.exteragram.messenger.plugins.PluginsConstants
 import com.exteragram.messenger.plugins.PluginsController
 import com.exteragram.messenger.plugins.catalog.ui.PluginRepositoriesActivity
 import com.exteragram.messenger.plugins.ui.components.EmptyPluginsView
@@ -38,6 +46,8 @@ import com.exteragram.messenger.preferences.BasePreferencesActivity
 import com.exteragram.messenger.utils.text.LocaleUtils
 import org.telegram.messenger.AndroidUtilities
 import org.telegram.messenger.AndroidUtilities.dp
+import org.telegram.messenger.ApplicationLoader
+import org.telegram.messenger.FileLog
 import org.telegram.messenger.LocaleController
 import org.telegram.messenger.MediaDataController
 import org.telegram.messenger.NotificationCenter
@@ -56,14 +66,22 @@ import org.telegram.ui.Components.UItem
 import org.telegram.ui.Components.UniversalAdapter
 import org.telegram.ui.Components.blur3.BlurredBackgroundDrawableViewFactory
 import org.telegram.ui.Components.blur3.drawable.color.BlurredBackgroundColorProviderThemed
+import org.telegram.ui.Components.blur3.drawable.color.impl.BlurredBackgroundProviderImpl
 import org.telegram.ui.ProfileActivity
 import org.telegram.ui.Stories.recorder.ButtonWithCounterView
 import org.telegram.utils.glass.source.GlassSourceColor
 import android.widget.FrameLayout
 import me.vkryl.android.animator.BoolAnimator
 import me.vkryl.android.animator.FactorAnimator
+import java.io.File
+import java.io.FileOutputStream
 
 class PluginsActivity : BasePreferencesActivity(), NotificationCenter.NotificationCenterDelegate {
+    private var selectedTab = TAB_EXTERA
+    private var exteraTabView: TextView? = null
+    private var superGramTabView: TextView? = null
+    private var importItem: ActionBarMenuItem? = null
+
     private var searching = false
     private var query: String? = null
     private var searchItem: ActionBarMenuItem? = null
@@ -91,18 +109,22 @@ class PluginsActivity : BasePreferencesActivity(), NotificationCenter.Notificati
                 ActionBarMenuItem.ActionBarMenuItemSearchListener() {
                 override fun onSearchExpand() {
                     searching = true
+                    setPinnedHeaderVisible(false, true)
                     listView.adapter.update(true)
                     listView.scrollToPosition(0)
                     infoItem?.visibility = View.GONE
+                    importItem?.visibility = View.GONE
                     updateCatalogButton(true)
                 }
 
                 override fun onSearchCollapse() {
                     searching = false
                     query = null
+                    setPinnedHeaderVisible(pluginsEngine, true)
                     listView.adapter.update(true)
                     listView.scrollToPosition(0)
                     infoItem?.visibility = View.VISIBLE
+                    importItem?.visibility = View.VISIBLE
                     catalogButtonScrollShown = true
                     updateCatalogButton(true)
                 }
@@ -124,6 +146,12 @@ class PluginsActivity : BasePreferencesActivity(), NotificationCenter.Notificati
 
         infoItem = actionBar.menu.addItem(1, R.drawable.msg_info)
         infoItem?.setOnClickListener { presentFragment(PluginsInfoActivity()) }
+
+        importItem = actionBar.menu.addItem(2, R.drawable.msg_add)
+        importItem?.contentDescription = LocaleController.getString(R.string.ImportPluginFile)
+        importItem?.setOnClickListener { openFileImporter() }
+
+        setPinnedHeaderVisible(pluginsEngine && !searching, false)
 
         val catalogText = SpannableStringBuilder("C " + LocaleController.getString(R.string.PluginCatalog)).apply {
             setSpan(ColoredImageSpan(R.drawable.settings_business), 0, 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
@@ -191,6 +219,10 @@ class PluginsActivity : BasePreferencesActivity(), NotificationCenter.Notificati
         }
 
         val plugins = HashMap(PluginsController.getInstance().plugins)
+        plugins.entries.removeIf { (_, plugin) ->
+            val isSuper = plugin.isSuperGramPlugin() || PluginsController.isSuperGramPlugin(plugin.getId())
+            if (selectedTab == TAB_SUPERGRAM) !isSuper else isSuper
+        }
 
         var space = UItem.asSpace(AndroidUtilities.dp(8f))
         space.transparent = true
@@ -221,6 +253,20 @@ class PluginsActivity : BasePreferencesActivity(), NotificationCenter.Notificati
                     localEmptyView.setText(LocaleController.getString(R.string.PluginsNotFound))
                     localEmptyView.setButton(null, null)
                     localEmptyView.tag = 1
+                }
+            } else if (selectedTab == TAB_SUPERGRAM) {
+                if (localEmptyView.tag == null || localEmptyView.tag as Int != 3) {
+                    MediaDataController.getInstance(UserConfig.selectedAccount)
+                        .setPlaceholderImage(
+                            localEmptyView.backupImageView,
+                            "AnimatedEmojies",
+                            "\uD83E\uDDE9",
+                            "100_100"
+                        )
+                    localEmptyView.setTitle(LocaleController.getString(R.string.SuperGramPluginsEmptyTitle))
+                    localEmptyView.setText(LocaleController.getString(R.string.SuperGramPluginsEmptyInfo))
+                    localEmptyView.setButton(LocaleController.getString(R.string.ImportPluginFile), ::openFileImporter)
+                    localEmptyView.tag = 3
                 }
             } else {
                 if (localEmptyView.tag == null || localEmptyView.tag as Int != 2) {
@@ -416,6 +462,7 @@ class PluginsActivity : BasePreferencesActivity(), NotificationCenter.Notificati
                     0.5f,
                     true,
                 )
+                setPinnedHeaderVisible(pluginsEngine && !searching, true)
                 updateCatalogButton(true)
                 listView.adapter.update(true)
                 isSwitchingEngineState = false
@@ -484,6 +531,7 @@ class PluginsActivity : BasePreferencesActivity(), NotificationCenter.Notificati
                     0.5f,
                     true,
                 )
+                setPinnedHeaderVisible(pluginsEngine && !searching, true)
                 updateCatalogButton(true)
                 listView.adapter.update(true)
             }
@@ -503,7 +551,120 @@ class PluginsActivity : BasePreferencesActivity(), NotificationCenter.Notificati
         return super.onBackPressed(invoked)
     }
 
+    override fun createPinnedHeader(
+        context: Context,
+        glassFactory: BlurredBackgroundDrawableViewFactory
+    ): View {
+        val container = LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER
+            setPadding(dp(4f), dp(4f), dp(4f), dp(4f))
+            background = glassFactory
+                .create(this, BlurredBackgroundProviderImpl.topPanelChatActivity(resourceProvider))
+                .setRadius(dp(24f).toFloat())
+        }
+
+        fun makeTab(title: String, tabIndex: Int): TextView = TextView(context).apply {
+            text = title
+            gravity = Gravity.CENTER
+            maxLines = 1
+            ellipsize = TextUtils.TruncateAt.END
+            setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13.5f)
+            typeface = AndroidUtilities.bold()
+            setPadding(dp(12f), 0, dp(12f), 0)
+            ScaleStateListAnimator.apply(this, 0.02f, 1.05f)
+            setOnClickListener {
+                if (selectedTab != tabIndex) {
+                    selectedTab = tabIndex
+                    updateTabStyles()
+                    listView.adapter?.update(true)
+                    updateCatalogButton(true)
+                }
+            }
+        }
+
+        exteraTabView = makeTab(LocaleController.getString(R.string.PluginsTabExtera), TAB_EXTERA)
+        superGramTabView = makeTab(LocaleController.getString(R.string.PluginsTabSuperGram), TAB_SUPERGRAM)
+
+        container.addView(exteraTabView, LayoutHelper.createLinear(0, LayoutHelper.MATCH_PARENT, 1f))
+        container.addView(superGramTabView, LayoutHelper.createLinear(0, LayoutHelper.MATCH_PARENT, 1f))
+        updateTabStyles()
+        return container
+    }
+
+    private fun updateTabStyles() {
+        val activeBgColor = ColorUtils.setAlphaComponent(getThemedColor(Theme.key_featuredStickers_addButton), 34)
+        val activeTextColor = getThemedColor(Theme.key_featuredStickers_addButton)
+        val inactiveTextColor = getThemedColor(Theme.key_windowBackgroundWhiteGrayText)
+
+        listOf(exteraTabView to TAB_EXTERA, superGramTabView to TAB_SUPERGRAM).forEach { (view, idx) ->
+            view ?: return@forEach
+            val active = selectedTab == idx
+            view.setTextColor(if (active) activeTextColor else inactiveTextColor)
+            view.background = if (active) {
+                Theme.createRoundRectDrawable(dp(20f), activeBgColor)
+            } else {
+                null
+            }
+        }
+    }
+
+    private fun openFileImporter() {
+        val activity = parentActivity ?: return
+        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+            addCategory(Intent.CATEGORY_OPENABLE)
+            type = "*/*"
+        }
+        try {
+            startActivityForResult(intent, IMPORT_PLUGIN_REQUEST_CODE)
+        } catch (t: Throwable) {
+            FileLog.e(t)
+            BulletinFactory.of(this).createSimpleBulletin(R.raw.error, t.message ?: "Error").show()
+        }
+    }
+
+    override fun onActivityResultFragment(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResultFragment(requestCode, resultCode, data)
+        if (requestCode != IMPORT_PLUGIN_REQUEST_CODE || resultCode != Activity.RESULT_OK) {
+            return
+        }
+        val uri = data?.data ?: return
+        val activity = parentActivity ?: return
+        try {
+            var fileName = "plugin" + if (selectedTab == TAB_SUPERGRAM) PluginsConstants.SPLUG_EXT else PluginsConstants.PLUGINS_EXT
+            activity.contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { cursor ->
+                if (cursor.moveToFirst()) {
+                    val idx = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                    if (idx >= 0) {
+                        val resolved = cursor.getString(idx)
+                        if (!resolved.isNullOrBlank()) {
+                            fileName = resolved
+                        }
+                    }
+                }
+            }
+            val lower = fileName.lowercase()
+            if (!lower.endsWith(PluginsConstants.PLUGINS_EXT) && !lower.endsWith(PluginsConstants.SPLUG_EXT)) {
+                fileName += if (selectedTab == TAB_SUPERGRAM) PluginsConstants.SPLUG_EXT else PluginsConstants.PLUGINS_EXT
+            }
+            val tempDir = File(ApplicationLoader.getFilesDirFixed(), "temp").apply { mkdirs() }
+            val tempFile = File(tempDir, fileName)
+            activity.contentResolver.openInputStream(uri)?.use { input ->
+                FileOutputStream(tempFile).use { output ->
+                    input.copyTo(output)
+                }
+            } ?: return
+            PluginsController.getInstance().showInstallDialog(this, tempFile.absolutePath, true)
+        } catch (t: Throwable) {
+            FileLog.e(t)
+            BulletinFactory.of(this).createSimpleBulletin(R.raw.error, t.message ?: "Import failed").show()
+        }
+    }
+
     companion object {
         private const val CATALOG_BUTTON_HEIGHT = 60f
+        private const val TAB_EXTERA = 0
+        private const val TAB_SUPERGRAM = 1
+        private const val IMPORT_PLUGIN_REQUEST_CODE = 4201
     }
 }

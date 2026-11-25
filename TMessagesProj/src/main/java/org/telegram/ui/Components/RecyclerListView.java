@@ -100,6 +100,7 @@ import java.util.Objects;
 
 import com.exteragram.messenger.DividerStyle;
 import com.exteragram.messenger.ExteraConfig;
+import com.exteragram.messenger.utils.ui.DesignStyleHelper;
 import com.exteragram.messenger.utils.system.VibratorUtils;
 
 @SuppressWarnings("JavaReflectionMemberAccess")
@@ -3637,10 +3638,10 @@ public class RecyclerListView extends RecyclerView implements IBlur3Capture {
     }
 
     public void setSections() {
-        setSections(dp(12), dp(ExteraConfig.getSectionRadiusDp()), false);
+        setSections(dp(DesignStyleHelper.getEffectiveSectionPaddingDp()), dp(DesignStyleHelper.getEffectiveSectionRadiusDp()), false);
     }
     public void setSections(boolean topPadding) {
-        setSections(dp(12), dp(ExteraConfig.getSectionRadiusDp()), topPadding);
+        setSections(dp(DesignStyleHelper.getEffectiveSectionPaddingDp()), dp(DesignStyleHelper.getEffectiveSectionRadiusDp()), topPadding);
     }
     public void setSections(int padding, float roundRadius, boolean topPadding) {
         final Utilities.CallbackReturn<View, Boolean> isSectionView =
@@ -4144,17 +4145,48 @@ public class RecyclerListView extends RecyclerView implements IBlur3Capture {
     public static void drawBackgroundRect(Canvas canvas, RectF rect, float topRadius, float bottomRadius, float alpha, Theme.ResourcesProvider resourcesProvider) {
         sectionBackgroundPaint.setShadowLayer(0, 0, 0, 0);
         sectionBackgroundPaint.setColor(multAlpha(Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider), alpha));
+        final boolean drawBorder = DesignStyleHelper.shouldDrawCardBorder();
         if (topRadius <= 0 && bottomRadius <= 0) {
             canvas.drawRect(rect, sectionBackgroundPaint);
+            if (drawBorder) {
+                prepareBorderPaint(resourcesProvider, alpha);
+                float half = sectionBackgroundStrokePaint.getStrokeWidth() / 2f;
+                AndroidUtilities.rectTmp2.set((int) (rect.left + half), (int) (rect.top + half), (int) (rect.right - half), (int) (rect.bottom - half));
+                canvas.drawRect(rect.left + half, rect.top + half, rect.right - half, rect.bottom - half, sectionBackgroundStrokePaint);
+            }
         } else if (topRadius == bottomRadius) {
             canvas.drawRoundRect(rect, topRadius, topRadius, sectionBackgroundPaint);
+            if (drawBorder) {
+                prepareBorderPaint(resourcesProvider, alpha);
+                float half = sectionBackgroundStrokePaint.getStrokeWidth() / 2f;
+                sectionBackgroundPath.rewind();
+                sectionBackgroundPath.addRoundRect(rect.left + half, rect.top + half, rect.right - half, rect.bottom - half, Math.max(0f, topRadius - half), Math.max(0f, topRadius - half), Path.Direction.CW);
+                canvas.drawPath(sectionBackgroundPath, sectionBackgroundStrokePaint);
+            }
         } else {
             sectionBackgroundPath.rewind();
             radii[0] = radii[1] = radii[2] = radii[3] = topRadius;
             radii[4] = radii[5] = radii[6] = radii[7] = bottomRadius;
             sectionBackgroundPath.addRoundRect(rect, radii, Path.Direction.CW);
             canvas.drawPath(sectionBackgroundPath, sectionBackgroundPaint);
+            if (drawBorder) {
+                prepareBorderPaint(resourcesProvider, alpha);
+                float half = sectionBackgroundStrokePaint.getStrokeWidth() / 2f;
+                float tr = Math.max(0f, topRadius - half);
+                float br = Math.max(0f, bottomRadius - half);
+                sectionBackgroundPath.rewind();
+                radii[0] = radii[1] = radii[2] = radii[3] = tr;
+                radii[4] = radii[5] = radii[6] = radii[7] = br;
+                sectionBackgroundPath.addRoundRect(rect.left + half, rect.top + half, rect.right - half, rect.bottom - half, radii, Path.Direction.CW);
+                canvas.drawPath(sectionBackgroundPath, sectionBackgroundStrokePaint);
+            }
         }
+    }
+
+    private static void prepareBorderPaint(Theme.ResourcesProvider resourcesProvider, float alpha) {
+        sectionBackgroundStrokePaint.setStyle(Paint.Style.STROKE);
+        sectionBackgroundStrokePaint.setStrokeWidth(DesignStyleHelper.getCardBorderWidthPx());
+        sectionBackgroundStrokePaint.setColor(DesignStyleHelper.getCardBorderColor(resourcesProvider, alpha));
     }
     public void drawBackgroundRect(Canvas canvas, RectF rect, float topRadius, float bottomRadius, float alpha) {
         drawBackgroundRect(canvas, rect, topRadius, bottomRadius, alpha, resourcesProvider);

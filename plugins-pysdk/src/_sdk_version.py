@@ -8,8 +8,8 @@
 # Licensed under the GNU GPL v. 3 or later, with the additional terms
 # in ADDITIONAL_TERMS.md at the root of the repository.
 
-__version__ = "1.4.6.5"
-version = (1, 4, 6, 5)
+__version__ = "1.4.6.7"
+version = (1, 4, 6, 7)
 version_str = __version__
 
 __beta__ = False

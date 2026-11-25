@@ -95,7 +95,8 @@ class PythonPluginsEngine : PluginsController.PluginsEngine {
         private val SDK_REQUIRED_MODULES = arrayOf(
             "_sdk_version",
             "base_plugin",
-            "plugin_settings"
+            "plugin_settings",
+            "supergram_ui"
         )
         private val SDK_ARCHIVE_POLICY = SecurityPolicy.builder()
             .maxEntries(100_000)
@@ -227,7 +228,10 @@ class PythonPluginsEngine : PluginsController.PluginsEngine {
     }
 
     override fun isPlugin(file: File?, messageObject: MessageObject?): Boolean {
-        return file != null && file.name.lowercase().endsWith(PluginsConstants.PLUGINS_EXT)
+        val fileName = file?.name?.lowercase()
+        val docName = messageObject?.documentName?.lowercase()
+        return (fileName != null && (fileName.endsWith(PluginsConstants.PLUGINS_EXT) || fileName.endsWith(PluginsConstants.SPLUG_EXT))) ||
+                (docName != null && (docName.endsWith(PluginsConstants.PLUGINS_EXT) || docName.endsWith(PluginsConstants.SPLUG_EXT)))
     }
 
     override fun isEngineAvailable(): Boolean {
@@ -640,12 +644,14 @@ class PythonPluginsEngine : PluginsController.PluginsEngine {
 
             for (file in pluginFiles) {
                 val pluginId = file.name.substring(0, file.name.length - 3)
+                val isSuperGram = PluginsController.isSuperGramPlugin(pluginId)
                 var validationResult: PluginsController.PluginValidationResult? = null
                 try {
                     validationResult = validatePluginFromFile(file.absolutePath)
                     if (validationResult.error != null) {
                         throw Exception(validationResult.error)
                     }
+                    validationResult.plugin?.setSuperGramPlugin(isSuperGram)
                     loadPlugin(pluginId, file.absolutePath, validationResult.plugin)
                 } catch (e: Throwable) {
                     FileLog.e("Failed to load plugin ${file.name}. Reason: ${e.message}", e)
@@ -661,12 +667,14 @@ class PythonPluginsEngine : PluginsController.PluginsEngine {
                             setSdkVersion(metadata.getSdkVersion())
                             setRequirements(metadata.getRequirements())
                             setEngine(metadata.getEngine())
+                            setSuperGramPlugin(isSuperGram)
                         }
                     } else {
                         Plugin(pluginId, pluginId).apply {
                             setAuthor(LocaleController.getString(R.string.PluginNoAuthor))
                             setVersion("1.0")
                             setEngine(PluginsConstants.PYTHON)
+                            setSuperGramPlugin(isSuperGram)
                         }
                     }
 
@@ -1149,8 +1157,9 @@ class PythonPluginsEngine : PluginsController.PluginsEngine {
         val fragment = LaunchActivity.getSafeLastFragment() ?: return
         val sourceFilePath = getPluginPath(id)
         val file = File(sourceFilePath)
+        val ext = if (PluginsController.isSuperGramPlugin(id)) PluginsConstants.SPLUG_EXT else PluginsConstants.PLUGINS_EXT
         if (file.exists()) {
-            PluginFileViewer.open(fragment, file, id + PluginsConstants.PLUGINS_EXT)
+            PluginFileViewer.open(fragment, file, id + ext)
         }
     }
 
@@ -1161,7 +1170,8 @@ class PythonPluginsEngine : PluginsController.PluginsEngine {
         val tempDir = File(ApplicationLoader.getFilesDirFixed(), "temp")
         SimpliFiles.directory(tempDir).create()
 
-        val tempFile = File(tempDir, id + PluginsConstants.PLUGINS_EXT)
+        val ext = if (PluginsController.isSuperGramPlugin(id)) PluginsConstants.SPLUG_EXT else PluginsConstants.PLUGINS_EXT
+        val tempFile = File(tempDir, id + ext)
         val uri: Uri = try {
             SimpliFiles.file(sourceFilePath).copyTo(tempFile, OverwritePolicy.REPLACE)
             FileProvider.getUriForFile(
@@ -1227,6 +1237,11 @@ class PythonPluginsEngine : PluginsController.PluginsEngine {
                 }
 
                 pluginId = metadata.getId()
+                val isSplug = filePath.lowercase().endsWith(PluginsConstants.SPLUG_EXT) ||
+                        metadata.isSuperGramPlugin() ||
+                        (pluginMetadata?.isSuperGramPlugin() == true)
+                metadata.setSuperGramPlugin(isSplug)
+                PluginsController.setSuperGramPlugin(pluginId, isSplug)
                 wasEnabledBeforeUpdate = getPluginsController().preferences.getBoolean(
                     PluginsController.PREF_PLUGIN_ENABLED_KEY_PREFIX + pluginId,
                     false
@@ -1445,6 +1460,10 @@ class PythonPluginsEngine : PluginsController.PluginsEngine {
 
             val metadata = Plugin(id, requireNotNull(name))
             metadata.setEngine(PluginsConstants.PYTHON)
+            val isSplugFile = filePath.lowercase().endsWith(PluginsConstants.SPLUG_EXT) ||
+                    metadataMap["supergram"]?.equals("true", ignoreCase = true) == true ||
+                    PluginsController.isSuperGramPlugin(id)
+            metadata.setSuperGramPlugin(isSplugFile)
             metadata.setAuthor(
                 metadataMap["author"] ?: LocaleController.getString(R.string.PluginNoAuthor)
             )

@@ -77,6 +77,7 @@ import androidx.core.math.MathUtils;
 import com.exteragram.messenger.DividerStyle;
 import com.exteragram.messenger.ExteraConfig;
 import com.exteragram.messenger.utils.text.LocaleUtils;
+import com.exteragram.messenger.utils.ui.DesignStyleHelper;
 import com.exteragram.messenger.utils.ui.MonetUtils;
 
 import org.json.JSONArray;
@@ -9289,10 +9290,10 @@ public class Theme {
             if (provider.isCompactMode()) {
                 final Integer compactColor = getCompactColor(key, provider);
                 if (compactColor != null) {
-                    return compactColor;
+                    return DesignStyleHelper.transformThemeColor(key, compactColor, currentTheme != null && currentTheme.isDark());
                 }
             }
-            return provider.getColor(key);
+            return DesignStyleHelper.transformThemeColor(key, provider.getColor(key), currentTheme != null && currentTheme.isDark());
         }
         return getColor(key);
     }
@@ -9345,10 +9346,10 @@ public class Theme {
         if (!ignoreAnimation && animatingColors != null) {
             int index = animatingColors.indexOfKey(key);
             if (index >= 0) {
-                return animatingColors.valueAt(index);
+                return DesignStyleHelper.transformThemeColor(key, animatingColors.valueAt(index), currentTheme != null && currentTheme.isDark());
             }
         }
-        return getColorFromTable(currentColors, key, isDefault);
+        return DesignStyleHelper.transformThemeColor(key, getColorFromTable(currentColors, key, isDefault), currentTheme != null && currentTheme.isDark());
     }
 
     /**
