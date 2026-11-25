@@ -2,7 +2,7 @@
   <img src="TMessagesProj/src/main/res-appicons/mipmap-xxxhdpi/ic_launcher.webp" width="96" alt="exteraGram">
 </p>
 
-<h1 align="center">exteraGram</h1>
+<h1 align="center">SuperGram</h1>
 
 <p align="center">
   A third-party Telegram client for Android, built on the
@@ -10,9 +10,9 @@
 </p>
 
 <p align="center">
-  <a href="https://t.me/exteraGram"><img src="https://img.shields.io/badge/Channel-Telegram-blue.svg" alt="Channel"></a>
+  <a href="https://t.me/supergram_client"><img src="https://img.shields.io/badge/Channel-Telegram-blue.svg" alt="Channel"></a>
   <a href="https://t.me/exteraChat"><img src="https://img.shields.io/badge/Chat-Telegram-blue.svg" alt="Chat"></a>
-  <a href="https://t.me/exteraReleases"><img src="https://img.shields.io/badge/Download-Telegram-blue.svg" alt="Download"></a>
+  <a href="https://t.me/supergram_release"><img src="https://img.shields.io/badge/Download-Telegram-blue.svg" alt="Download"></a>
   <a href="https://crowdin.com/project/exteralocales"><img src="https://img.shields.io/badge/Translate-Crowdin-green.svg" alt="Crowdin"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-GPL--3.0-orange.svg" alt="License"></a>
 </p>
@@ -24,7 +24,7 @@
 - Material You themes, icon packs and alternative app icons.
 - A long list of interface and chat options that the official client does not have.
 
-Releases are published in [@exteraReleases](https://t.me/exteraReleases).
+Releases are published in [@supergram_release](https://t.me/supergram_release).
 
 ## Editions
 
@@ -49,7 +49,7 @@ ARM build. `beta` is a universal ARM build with beta naming.
 
 1. Clone the repository with its submodules:
    ```bash
-   git clone --recursive --shallow-submodules https://github.com/exteraSquad/exteraGram.git
+   git clone --recursive --shallow-submodules https://github.com/soowoodpect/supergram
    ```
    If you cloned without `--recursive`:
    ```bash
@@ -90,6 +90,7 @@ exteraGram are translated on [Crowdin](https://crowdin.com/project/exteralocales
 ## Thanks
 
 - [Telegram for Android](https://github.com/DrKLO/Telegram)
+- [exteraGram](https://github.com/exteraSquad/exteraGram)
 - [Catogram](https://github.com/Catogram/Catogram)
 - [Nekogram](https://gitlab.com/Nekogram/Nekogram)
 - [OwlGram](https://github.com/OwlGramDev/OwlGram)
